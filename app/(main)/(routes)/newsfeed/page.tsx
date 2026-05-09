@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { NewsFeedPage } from "@/components/feed/news-feed-page";
+import { NewsFeedPage } from "@/components/newsfeed/news-feed-page";
 import { currentProfile } from "@/services/current-profile";
 
 const NewsfeedRoutePage = async () => {

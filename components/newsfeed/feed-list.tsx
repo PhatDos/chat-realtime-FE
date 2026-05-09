@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { useApiClient } from "@/hooks/use-api-client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/nextjs";
@@ -404,11 +405,18 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
 
       <div ref={sentinelRef} className="h-1" />
 
-      <div className="flex justify-center py-2">
+      <div className="flex justify-center py-8">
         {hasMore ? (
-          <Button type="button" variant="outline" onClick={() => void loadMore()} disabled={isLoadingMore}>
-            {isLoadingMore ? "Loading..." : "Load more"}
-          </Button>
+          isLoadingMore ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading...</p>
+            </div>
+          ) : (
+            <Button type="button" variant="outline" onClick={() => void loadMore()} disabled={isLoadingMore}>
+              Load more
+            </Button>
+          )
         ) : (
           <p className="text-xs text-zinc-500 dark:text-zinc-400">You have reached the end of the feed.</p>
         )}

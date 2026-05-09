@@ -1,4 +1,4 @@
-import type { FeedComment, FeedPost } from "@/components/feed/types";
+import type { FeedComment, FeedPost } from "@/components/newsfeed/types";
 
 export const POSTS_EVENTS_URL = `${process.env.NEXT_PUBLIC_SITE_URL}/posts/events`;
 

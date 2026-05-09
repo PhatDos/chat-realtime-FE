@@ -1,4 +1,4 @@
-import type { FeedComment, FeedPost } from "@/components/feed/types";
+import type { FeedComment, FeedPost } from "@/components/newsfeed/types";
 import type { ClientApi } from "@/services/client-api";
 
 export type CreatePostInput = {
