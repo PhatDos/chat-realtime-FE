@@ -49,16 +49,14 @@ export const PostCard = ({ post, onLike, currentUserId, onDelete, isDeleting = f
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
-            {post.author.id === currentUserId ? (
-              <UserAvatar src={post.author.imageUrl} className="h-9 w-9 ring-2 ring-indigo-200 dark:ring-indigo-900/50" />
-            ) : (
-              <ProfileHoverCard
-                id={post.author.id ?? ""}
-                name={post.author.name}
-                imageUrl={post.author.imageUrl}
-                className="h-9 w-9 ring-2 ring-indigo-200 dark:ring-indigo-900/50"
-              />
-            )}
+            <ProfileHoverCard
+              id={post.author.id}
+              name={post.author.name}
+              imageUrl={post.author.imageUrl}
+              currentProfileId={currentUserId}
+              href={`/profile/${post.author.id}`}
+              className="h-9 w-9"
+            />
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{post.author.name}</p>
               <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">

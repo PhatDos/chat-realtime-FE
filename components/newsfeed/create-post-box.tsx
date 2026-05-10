@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Globe, Lock, Users } from "lucide-react";
 
@@ -65,10 +66,12 @@ export const CreatePostBox = ({ author, onCreated }: CreatePostBoxProps) => {
     <Card className="border-zinc-200 dark:border-zinc-700/70 bg-gradient-to-br from-white to-zinc-50/50 dark:from-[#2b2d31] dark:to-zinc-900/20 shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start gap-3">
-          <UserAvatar
-            src={author.imageUrl}
-            className="h-10 w-10 ring-2 ring-indigo-200 dark:ring-indigo-900/50"
-          />
+          <Link href={`/profile/${author.id}`} className="group shrink-0">
+            <UserAvatar
+              src={author.imageUrl}
+              className="h-10 w-10 ring-2 ring-indigo-200 dark:ring-indigo-900/50"
+            />
+          </Link>
           <div className="flex-1 space-y-2">
             <textarea
               value={content}

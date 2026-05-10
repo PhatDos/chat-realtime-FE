@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 
+import { ProfileHoverCard } from "@/components/common/profile-hover-card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
 import { useApiClient } from "@/hooks/use-api-client";
@@ -153,7 +155,20 @@ export const PostComments = ({ postId, currentUserId, onCommentAdded, initialCom
         <div className="space-y-3">
           {comments.map((comment) => (
             <div key={comment.id} className="flex gap-2">
-              <UserAvatar src={comment.author.imageUrl} className="h-8 w-8 mt-0.5" />
+              {comment.author.id === currentUserId ? (
+                <Link href={`/profile/${comment.author.id}`} className="shrink-0 mt-0.5">
+                  <UserAvatar src={comment.author.imageUrl} className="h-8 w-8" />
+                </Link>
+              ) : (
+                <ProfileHoverCard
+                  id={comment.author.id}
+                  name={comment.author.name}
+                  imageUrl={comment.author.imageUrl}
+                  currentProfileId={currentUserId}
+                  href={`/profile/${comment.author.id}`}
+                  className="h-8 w-8"
+                />
+              )}
               <div className="flex-1">
                 <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2">
                   <p className="text-sm font-semibold">{comment.author.name}</p>

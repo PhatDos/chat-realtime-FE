@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { AxiosError } from 'axios'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -7,6 +8,7 @@ import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
 import { addFriend, getFriend, removeFriend } from '@/services/friends-client-service'
 import type { FriendProfileResponse } from '@/types/api/member'
+import GlareHover from '@/components/animation/glare-hover/GlareHover'
 import { UserAvatar } from './user-avatar'
 
 interface ProfileHoverCardProps {
@@ -15,6 +17,7 @@ interface ProfileHoverCardProps {
   imageUrl?: string
   currentProfileId?: string
   className?: string
+  href?: string
 }
 
 export const ProfileHoverCard = ({
@@ -22,7 +25,8 @@ export const ProfileHoverCard = ({
   name,
   imageUrl,
   currentProfileId,
-  className
+  className,
+  href
 }: ProfileHoverCardProps) => {
   const isSelf = id === currentProfileId
   const [open, setOpen] = useState(false)
@@ -44,6 +48,31 @@ export const ProfileHoverCard = ({
 
   const isFriend = friendQuery.data?.isFriend ?? false
   const isChecking = friendQuery.isFetching && !friendQuery.data
+  const avatarNode = href ? (
+    <Link href={href} className='inline-block'>
+      <UserAvatar src={imageUrl} className={className} />
+    </Link>
+  ) : (
+    <UserAvatar src={imageUrl} className={className} />
+  )
+
+  const glareAvatarNode = (
+    <GlareHover
+      width='fit-content'
+      height='fit-content'
+      background='transparent'
+      borderRadius='9999px'
+      borderColor='transparent'
+      glareColor='#ffffff'
+      glareOpacity={0.3}
+      glareAngle={-30}
+      glareSize={300}
+      transitionDuration={1500}
+      playOnce={false}
+    >
+      {avatarNode}
+    </GlareHover>
+  )
 
   const onAddFriend = async () => {
     if (isAdding || isFriend) return
@@ -109,7 +138,15 @@ export const ProfileHoverCard = ({
     }
   }
 
-  if (isSelf) return <UserAvatar src={imageUrl} className={className} />
+  if (isSelf) {
+    return href ? (
+      <Link href={href} className='inline-block'>
+        <UserAvatar src={imageUrl} className={className} />
+      </Link>
+    ) : (
+      <UserAvatar src={imageUrl} className={className} />
+    )
+  }
 
   return (
     <div
@@ -117,9 +154,7 @@ export const ProfileHoverCard = ({
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <div className='cursor-pointer'>
-        <UserAvatar src={imageUrl} className={className} />
-      </div>
+      {glareAvatarNode}
 
       {open && (
         <div className='absolute z-50 right-0 mt-0 -mx-36 w-48 bg-white dark:bg-[#1f2937] shadow-lg rounded p-2 text-sm'>
