@@ -6,10 +6,14 @@ import { initialProfile } from "@/lib/intial-profile";
 const SetupPage = async () => {
   await initialProfile();
 
-  const server = await getInitialServer();
+  const initial = await getInitialServer();
 
-  if (server) {
-    return redirect(`/servers/${server.id}`);
+  const serverId = initial?.server?.id;
+  const channelId =
+    initial?.server?.generalChannelId ?? initial?.initialChannel?.channelId ?? null;
+
+  if (serverId && channelId) {
+    return redirect(`/servers/${serverId}/channels/${channelId}`);
   }
 
   return <InitialModal />;

@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import {
-  Globe,
   MessageCircle,
-  Users,
   UserPlus,
   UserCheck,
   Calendar,
@@ -20,8 +17,8 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { PostCard } from "@/components/newsfeed/post-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import type { MockProfile, MockUser } from "./mock-profile-data";
-import { FeedComment, FeedPost } from "@/components/newsfeed/types";
+import type { MockProfile } from "./mock-profile-data";
+import { FeedPost } from "@/components/newsfeed/types";
 
 interface ProfilePageProps {
   profile: MockProfile;

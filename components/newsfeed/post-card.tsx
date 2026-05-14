@@ -5,7 +5,6 @@ import Image from "next/image";
 import { FileText, Globe, Heart, Lock, MessageCircle, Trash2, Users } from "lucide-react";
 
 import { ProfileHoverCard } from "@/components/common/profile-hover-card";
-import { UserAvatar } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";

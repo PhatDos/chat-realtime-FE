@@ -12,19 +12,28 @@ export interface ServerResponse {
   imageUrl: string;
   inviteCode: string;
   profileId: string;
+  generalChannelId: string | null;
   createdAt: ApiDateTime;
   updatedAt: ApiDateTime;
 }
 
-export type InitialServerResponse = ServerResponse | null;
+export interface InitialServerEndpointResponse {
+  server: ServerResponse & {
+    generalChannel?: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  initialChannel: import("./channel").InitialChannelResponse | null;
+}
 
+export type InitialServerResponse = InitialServerEndpointResponse | null;
 export interface ServerSummary {
   id: string;
   name: string;
   imageUrl: string;
   unreadCount?: number;
 }
-
 export interface ServerPaginationResponse {
   data: ServerSummary[];
   total: number;

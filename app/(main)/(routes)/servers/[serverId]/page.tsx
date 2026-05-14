@@ -1,5 +1,5 @@
 import { currentProfile } from "@/services/current-profile";
-import { getInitialChannel } from "@/services/servers/servers-ssr-service";
+import { getServerSidebarData } from "@/services/servers/servers-ssr-service";
 import { redirect } from "next/navigation";
 
 interface ServerIdPageProps {
@@ -17,13 +17,20 @@ const ServerIdPage = async ({ params }: ServerIdPageProps) => {
 
   const { serverId } = await params;
 
-  const channelData = await getInitialChannel(serverId);
+  const sidebarData = await getServerSidebarData(serverId);
 
-  if (!channelData) {
+  const channelId =
+    sidebarData?.server?.generalChannelId ??
+    sidebarData?.textChannels?.[0]?.id ??
+    sidebarData?.server?.channels?.find((c) => c.name === "general")?.id ??
+    null;
+
+  if (!channelId) {
+    // nothing to redirect to — keep user on server root
     return null;
   }
 
-  return redirect(`/servers/${serverId}/channels/${channelData.channelId}`);
+  return redirect(`/servers/${serverId}/channels/${channelId}`);
 };
 
 export default ServerIdPage;
