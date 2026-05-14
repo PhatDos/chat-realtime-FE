@@ -16,6 +16,10 @@ const SetupPage = async () => {
     return redirect(`/servers/${serverId}/channels/${channelId}`);
   }
 
+  if (serverId) {
+    return redirect(`/servers/${serverId}`);
+  }
+
   return <InitialModal />;
 };
 

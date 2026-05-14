@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { QRCodeBlock } from "@/components/common/qr-code-block";
 import { PostCard } from "@/components/newsfeed/post-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -23,9 +24,10 @@ import { FeedPost } from "@/components/newsfeed/types";
 interface ProfilePageProps {
   profile: MockProfile;
   currentUserId: string;
+  profileUrl: string;
 }
 
-export const ProfilePage = ({ profile, currentUserId }: ProfilePageProps) => {
+export const ProfilePage = ({ profile, currentUserId, profileUrl }: ProfilePageProps) => {
   const [isFriend, setIsFriend] = useState(profile.isFriend);
   const [isAdding, setIsAdding] = useState(false);
   const [posts, setPosts] = useState<FeedPost[]>(profile.posts);
@@ -286,6 +288,13 @@ export const ProfilePage = ({ profile, currentUserId }: ProfilePageProps) => {
                   </h3>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <QRCodeBlock
+                    title="Profile QR"
+                    description="Scan to open this profile on another device."
+                    value={profileUrl}
+                    size={250}
+                  />
+
                   <div>
                     <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
                       Bio

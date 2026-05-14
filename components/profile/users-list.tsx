@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { getAllMockUsers } from "./mock-profile-data";
 

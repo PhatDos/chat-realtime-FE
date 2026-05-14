@@ -43,6 +43,8 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
   }
 
   const { userId } = await params;
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const profileUrl = `${siteUrl}/profile/${userId}`;
 
   let userProfile: MockProfile;
 
@@ -75,7 +77,11 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
 
   return (
     <div className="h-full overflow-y-auto bg-zinc-100/70 dark:bg-[#313338]">
-      <ProfilePage profile={userProfile} currentUserId={profile.id} />
+      <ProfilePage
+        profile={userProfile}
+        currentUserId={profile.id}
+        profileUrl={profileUrl}
+      />
     </div>
   );
 };
