@@ -4,7 +4,8 @@ import { ProfilePage } from "@/components/profile/profile-page";
 import { getMockProfile } from "@/components/profile/mock-profile-data";
 import { currentProfile } from "@/services/current-profile";
 import { fetchWithAuth } from "@/lib/server-api-client";
-import type { UserProfileDto, FriendResponseDto } from "@/types/api/user";
+import type { UserProfileDto } from "@/types/api/user";
+import type { FriendshipInfoDto } from "@/types/api/friendship";
 import type { FeedPost } from "@/components/newsfeed/types";
 import type { MockProfile } from "@/components/profile/mock-profile-data";
 
@@ -47,6 +48,7 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
   const profileUrl = `${siteUrl}/profile/${userId}`;
 
   let userProfile: MockProfile;
+  let targetProfileId = userId;
 
   try {
     const [userResp, friendResp, postsResp] = await Promise.all([
@@ -54,7 +56,7 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
         client.get<UserProfileDto>(`/users/${userId}`, { ...config })
       ),
       fetchWithAuth((client, config) =>
-        client.get<FriendResponseDto>(`/users/${userId}/friend`, { ...config })
+        client.get<FriendshipInfoDto>(`/profiles/${userId}/friend`, { ...config })
       ),
       fetchWithAuth((client, config) =>
         client.get<{ items: FeedPost[]; nextCursor: string | null }>(
@@ -69,10 +71,12 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
       friendResp.data.isFriend,
       postsResp.data.items || []
     );
+    targetProfileId = friendResp.data.id || userId;
   } catch (error) {
     // Fallback to mock data if API fails
     console.error("Failed to fetch user profile:", error);
     userProfile = getMockProfile(userId);
+    targetProfileId = userId;
   }
 
   return (
@@ -81,6 +85,7 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
         profile={userProfile}
         currentUserId={profile.id}
         profileUrl={profileUrl}
+        targetProfileId={targetProfileId}
       />
     </div>
   );

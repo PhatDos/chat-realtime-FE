@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { AxiosError } from "axios";
 import {
   MessageCircle,
   UserPlus,
   UserCheck,
+  Clock3,
+  UserMinus,
   Calendar,
   MapPin,
   Link as LinkIcon,
@@ -17,6 +20,14 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { QRCodeBlock } from "@/components/common/qr-code-block";
 import { PostCard } from "@/components/newsfeed/post-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useApiClient } from "@/hooks/use-api-client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  cancelFriendRequest,
+  getSentFriendRequests,
+  sendFriendRequest,
+  unfriend,
+} from "@/services/friends-client-service";
 
 import type { MockProfile } from "./mock-profile-data";
 import { FeedPost } from "@/components/newsfeed/types";
@@ -25,31 +36,191 @@ interface ProfilePageProps {
   profile: MockProfile;
   currentUserId: string;
   profileUrl: string;
+  targetProfileId: string;
 }
 
-export const ProfilePage = ({ profile, currentUserId, profileUrl }: ProfilePageProps) => {
+export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileId }: ProfilePageProps) => {
   const [isFriend, setIsFriend] = useState(profile.isFriend);
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [posts, setPosts] = useState<FeedPost[]>(profile.posts);
+  const api = useApiClient();
+  const { toast } = useToast();
 
-  const isOwnProfile = profile.user.id === currentUserId;
+  const isOwnProfile = targetProfileId === currentUserId;
+
+  useEffect(() => {
+    const loadSentRequests = async () => {
+      if (isOwnProfile || isFriend) {
+        return;
+      }
+
+      try {
+        const sentRequests = await getSentFriendRequests(api);
+        const pendingRequest = sentRequests.find(
+          (request) =>
+            request.receiverId === targetProfileId && request.status === "PENDING"
+        );
+        setPendingRequestId(pendingRequest?.id ?? null);
+      } catch {
+        setPendingRequestId(null);
+      }
+    };
+
+    void loadSentRequests();
+  }, [api, isFriend, isOwnProfile, targetProfileId]);
 
   const handleAddFriend = async () => {
-    setIsAdding(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsFriend(true);
+    if (isAdding || isFriend || pendingRequestId) {
+      return;
+    }
+
+    try {
+      setIsAdding(true);
+      const request = await sendFriendRequest(api, targetProfileId);
+      setPendingRequestId(request.id);
+
+      toast({
+        title: "Friend request sent",
+        description: `Your friend request has been sent to ${profile.user.name}`,
+        variant: "success",
+      });
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>;
+      toast({
+        title: "Cannot send request",
+        description:
+          err.response?.data?.message ??
+          "Failed to send friend request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsAdding(false);
-    }, 600);
+    }
   };
 
-  const handleRemoveFriend = async () => {
-    setIsAdding(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsFriend(false);
+  const handleCancelRequest = async () => {
+    if (isAdding || !pendingRequestId || isFriend) {
+      return;
+    }
+
+    try {
+      setIsAdding(true);
+      await cancelFriendRequest(api, pendingRequestId);
+      setPendingRequestId(null);
+
+      toast({
+        title: "Request canceled",
+        description: `Friend request to ${profile.user.name} has been canceled`,
+        variant: "success",
+      });
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>;
+      toast({
+        title: "Cannot cancel request",
+        description:
+          err.response?.data?.message ??
+          "Failed to cancel friend request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsAdding(false);
-    }, 600);
+    }
+  };
+
+  const handleUnfriend = async () => {
+    if (isAdding || !isFriend) {
+      return;
+    }
+
+    try {
+      setIsAdding(true);
+      await unfriend(api, targetProfileId);
+      setIsFriend(false);
+
+      toast({
+        title: "Friend removed",
+        description: `You are no longer friends with ${profile.user.name}`,
+        variant: "success",
+      });
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>;
+      toast({
+        title: "Cannot remove friend",
+        description:
+          err.response?.data?.message ??
+          "Failed to remove friend. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const getFriendActionLabel = () => {
+    if (isAdding) {
+      if (isFriend) {
+        return "Removing...";
+      }
+
+      if (pendingRequestId) {
+        return "Canceling...";
+      }
+
+      return "Sending...";
+    }
+
+    if (isFriend) {
+      return "Friends";
+    }
+
+    if (pendingRequestId) {
+      return "Requested";
+    }
+
+    return "Add Friend";
+  };
+
+  const getFriendActionIcon = () => {
+    if (isFriend) {
+      return <UserCheck className="h-4 w-4" />;
+    }
+
+    if (pendingRequestId) {
+      return <Clock3 className="h-4 w-4" />;
+    }
+
+    return <UserPlus className="h-4 w-4" />;
+  };
+
+  const getFriendActionVariant = () => {
+    if (isFriend || pendingRequestId) {
+      return "outline" as const;
+    }
+
+    return "default" as const;
+  };
+
+  const getFriendActionClassName = () => {
+    if (pendingRequestId) {
+      return "gap-2 border-amber-400 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950/20";
+    }
+
+    return "gap-2";
+  };
+
+  const handleFriendAction = async () => {
+    if (pendingRequestId) {
+      await handleCancelRequest();
+      return;
+    }
+
+    if (isFriend) {
+      await handleUnfriend();
+      return;
+    }
+
+    await handleAddFriend();
   };
 
   const handleLike = (postId: string, isLiked: boolean) => {
@@ -202,22 +373,22 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl }: ProfilePageP
                           <Button
                             variant="outline"
                             className="gap-2"
-                            onClick={handleRemoveFriend}
+                            onClick={handleFriendAction}
                             disabled={isAdding}
                           >
-                            <UserCheck className="h-4 w-4" />
-                            Friends
+                            <UserMinus className="h-4 w-4" />
+                            Unfriend
                           </Button>
                         </>
                       ) : (
                         <Button
-                          variant="default"
-                          className="gap-2"
-                          onClick={handleAddFriend}
+                          variant={getFriendActionVariant()}
+                          className={getFriendActionClassName()}
+                          onClick={handleFriendAction}
                           disabled={isAdding}
                         >
-                          <UserPlus className="h-4 w-4" />
-                          {isAdding ? "Adding..." : "Add Friend"}
+                          {getFriendActionIcon()}
+                          {getFriendActionLabel()}
                         </Button>
                       )}
                     </>

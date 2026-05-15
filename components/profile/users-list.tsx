@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { Mail, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,11 +17,20 @@ export const UsersList = ({ currentUserId }: UsersListProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          Users
-        </h2>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            Users
+          </h2>
+        </div>
+
+        <Link href="/friend-requests">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Mail className="h-4 w-4" />
+            Friend Requests
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

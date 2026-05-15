@@ -9,10 +9,6 @@ export interface UserProfileDto {
   isOnline: boolean;
 }
 
-export interface FriendResponseDto {
-  isFriend: boolean;
-}
-
 export interface PostsPageResponse {
   items: any[];
   nextCursor: string | null;

@@ -28,10 +28,3 @@ export interface MemberResponse {
 export interface MemberWithProfileResponse extends MemberResponse {
   profile: ProfileResponse;
 }
-
-export interface FriendProfileResponse {
-  id: string;
-  name: string;
-  imageUrl: string;
-  isFriend: boolean;
-}

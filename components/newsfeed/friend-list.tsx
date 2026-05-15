@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
-import { UserPlus, MessageCircle, Users } from "lucide-react";
+import { UserPlus, MessageCircle, Mail, Users } from "lucide-react";
 
 interface Friend {
   id: string;
@@ -65,6 +65,13 @@ export const FriendList = ({ friends = MOCK_FRIENDS }: FriendListProps) => {
         <Button variant="outline" size="sm" className="w-full gap-2">
           <Users className="h-4 w-4" />
           Browse Users
+        </Button>
+      </Link>
+
+      <Link href="/friend-requests">
+        <Button variant="outline" size="sm" className="w-full gap-2">
+          <Mail className="h-4 w-4" />
+          Friend Requests
         </Button>
       </Link>
 
