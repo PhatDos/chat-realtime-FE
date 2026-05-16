@@ -11,6 +11,10 @@ export interface FriendshipInfoDto {
   name: string;
   imageUrl: string;
   isFriend: boolean;
+  pendingRequest?: {
+    id: string;
+    direction: "sent" | "received";
+  } | null;
 }
 
 export interface FriendRequestDto {

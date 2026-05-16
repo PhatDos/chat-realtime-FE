@@ -8,7 +8,11 @@ export const getUserProfile = async (api: ClientApi, userId: string) => {
 };
 
 export const getUserFriendStatus = async (api: ClientApi, userId: string) => {
-  return api.get<FriendshipInfoDto>(`/profiles/${userId}/friend`);
+  const response = await api.get<{ data?: FriendshipInfoDto } | FriendshipInfoDto>(
+    `/profiles/${userId}/friend`
+  );
+
+  return (response as { data?: FriendshipInfoDto }).data ?? (response as FriendshipInfoDto);
 };
 
 export const getUserPosts = async (

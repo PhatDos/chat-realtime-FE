@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CreatePostBox } from "./create-post-box";
 import { FeedList } from "./feed-list";
 import { FriendList } from "./friend-list";
+import { NotificationBell } from "./notification-bell";
 import { FeedAuthor, FeedPost } from "./types";
 
 interface NewsFeedPageProps {
@@ -18,13 +19,17 @@ export const NewsFeedPage = ({ currentUser }: NewsFeedPageProps) => {
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900 py-6">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-            Newsfeed
-          </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
-            Infinite scroll, optimistic likes, and realtime prepended posts.
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+              Newsfeed
+            </h1>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
+              Infinite scroll, optimistic likes, and realtime prepended posts.
+            </p>
+          </div>
+          {/* <NotificationBell incomingRequestsCount={2} /> */}
+          <NotificationBell />
         </div>
 
         {/* Main Layout - 70:30 Ratio */}

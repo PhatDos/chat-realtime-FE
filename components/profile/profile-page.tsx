@@ -23,8 +23,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApiClient } from "@/hooks/use-api-client";
 import { useToast } from "@/hooks/use-toast";
 import {
+  acceptFriendRequest,
   cancelFriendRequest,
-  getSentFriendRequests,
+  getFriendshipInfo,
+  rejectFriendRequest,
   sendFriendRequest,
   unfriend,
 } from "@/services/friends-client-service";
@@ -42,6 +44,7 @@ interface ProfilePageProps {
 export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileId }: ProfilePageProps) => {
   const [isFriend, setIsFriend] = useState(profile.isFriend);
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+  const [pendingRequestDirection, setPendingRequestDirection] = useState<"sent" | "received" | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [posts, setPosts] = useState<FeedPost[]>(profile.posts);
   const api = useApiClient();
@@ -50,25 +53,25 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
   const isOwnProfile = targetProfileId === currentUserId;
 
   useEffect(() => {
-    const loadSentRequests = async () => {
-      if (isOwnProfile || isFriend) {
+    const loadFriendshipInfo = async () => {
+      if (isOwnProfile) {
         return;
       }
 
       try {
-        const sentRequests = await getSentFriendRequests(api);
-        const pendingRequest = sentRequests.find(
-          (request) =>
-            request.receiverId === targetProfileId && request.status === "PENDING"
-        );
-        setPendingRequestId(pendingRequest?.id ?? null);
+        const friendshipInfo = await getFriendshipInfo(api, targetProfileId);
+        setIsFriend(friendshipInfo.isFriend);
+        setPendingRequestId(friendshipInfo.pendingRequest?.id ?? null);
+        setPendingRequestDirection(friendshipInfo.pendingRequest?.direction ?? null);
       } catch {
+        setIsFriend(profile.isFriend);
         setPendingRequestId(null);
+        setPendingRequestDirection(null);
       }
     };
 
-    void loadSentRequests();
-  }, [api, isFriend, isOwnProfile, targetProfileId]);
+    void loadFriendshipInfo();
+  }, [api, isOwnProfile, profile.isFriend, targetProfileId]);
 
   const handleAddFriend = async () => {
     if (isAdding || isFriend || pendingRequestId) {
@@ -78,7 +81,9 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
     try {
       setIsAdding(true);
       const request = await sendFriendRequest(api, targetProfileId);
-      setPendingRequestId(request.id);
+      setPendingRequestId(request.id ?? null);
+      setPendingRequestDirection("sent");
+      setIsFriend(false);
 
       toast({
         title: "Friend request sent",
@@ -108,6 +113,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setIsAdding(true);
       await cancelFriendRequest(api, pendingRequestId);
       setPendingRequestId(null);
+      setPendingRequestDirection(null);
 
       toast({
         title: "Request canceled",
@@ -137,6 +143,8 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setIsAdding(true);
       await unfriend(api, targetProfileId);
       setIsFriend(false);
+      setPendingRequestId(null);
+      setPendingRequestDirection(null);
 
       toast({
         title: "Friend removed",
@@ -175,7 +183,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
     }
 
     if (pendingRequestId) {
-      return "Requested";
+      return pendingRequestDirection === "received" ? "Respond" : "Cancel Request";
     }
 
     return "Add Friend";
@@ -210,6 +218,10 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
   };
 
   const handleFriendAction = async () => {
+    if (pendingRequestDirection === "received") {
+      return;
+    }
+
     if (pendingRequestId) {
       await handleCancelRequest();
       return;
@@ -221,6 +233,67 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
     }
 
     await handleAddFriend();
+  };
+
+  const handleAcceptRequest = async () => {
+    if (isAdding || !pendingRequestId || pendingRequestDirection !== "received") {
+      return;
+    }
+
+    try {
+      setIsAdding(true);
+      await acceptFriendRequest(api, pendingRequestId);
+      setPendingRequestId(null);
+      setPendingRequestDirection(null);
+      setIsFriend(true);
+
+      toast({
+        title: "Friend request accepted",
+        description: `You are now friends with ${profile.user.name}`,
+        variant: "success",
+      });
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>;
+      toast({
+        title: "Cannot accept request",
+        description:
+          err.response?.data?.message ??
+          "Failed to accept friend request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (isAdding || !pendingRequestId || pendingRequestDirection !== "received") {
+      return;
+    }
+
+    try {
+      setIsAdding(true);
+      await rejectFriendRequest(api, pendingRequestId);
+      setPendingRequestId(null);
+      setPendingRequestDirection(null);
+
+      toast({
+        title: "Friend request rejected",
+        description: `You rejected ${profile.user.name}'s request`,
+        variant: "success",
+      });
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>;
+      toast({
+        title: "Cannot reject request",
+        description:
+          err.response?.data?.message ??
+          "Failed to reject friend request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const handleLike = (postId: string, isLiked: boolean) => {
@@ -378,6 +451,27 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
                           >
                             <UserMinus className="h-4 w-4" />
                             Unfriend
+                          </Button>
+                        </>
+                      ) : pendingRequestDirection === "received" ? (
+                        <>
+                          <Button
+                            variant="default"
+                            className="gap-2"
+                            onClick={handleAcceptRequest}
+                            disabled={isAdding}
+                          >
+                            <UserCheck className="h-4 w-4" />
+                            Accept Request
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={handleRejectRequest}
+                            disabled={isAdding}
+                          >
+                            <UserMinus className="h-4 w-4" />
+                            Reject
                           </Button>
                         </>
                       ) : (

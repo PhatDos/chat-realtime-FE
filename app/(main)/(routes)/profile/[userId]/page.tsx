@@ -56,7 +56,7 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
         client.get<UserProfileDto>(`/users/${userId}`, { ...config })
       ),
       fetchWithAuth((client, config) =>
-        client.get<FriendshipInfoDto>(`/profiles/${userId}/friend`, { ...config })
+        client.get<{ data: FriendshipInfoDto }>(`/profiles/${userId}/friend`, { ...config })
       ),
       fetchWithAuth((client, config) =>
         client.get<{ items: FeedPost[]; nextCursor: string | null }>(
@@ -66,12 +66,14 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
       ),
     ]);
 
+    const friendshipInfo = friendResp.data.data;
+
     userProfile = mapBackendToProfile(
       userResp.data,
-      friendResp.data.isFriend,
+      friendshipInfo.isFriend,
       postsResp.data.items || []
     );
-    targetProfileId = friendResp.data.id || userId;
+    targetProfileId = friendshipInfo.id || userId;
   } catch (error) {
     // Fallback to mock data if API fails
     console.error("Failed to fetch user profile:", error);

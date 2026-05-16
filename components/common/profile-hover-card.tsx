@@ -7,13 +7,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
 import {
+  acceptFriendRequest,
   cancelFriendRequest,
   getFriendshipInfo,
-  getSentFriendRequests,
+  rejectFriendRequest,
   sendFriendRequest,
   unfriend,
 } from '@/services/friends-client-service'
-import type { FriendRequestDto, FriendshipInfoDto } from '@/types/api/friendship'
+import type { FriendshipInfoDto } from '@/types/api/friendship'
 import GlareHover from '@/components/animation/glare-hover/GlareHover'
 import { UserAvatar } from './user-avatar'
 
@@ -52,20 +53,8 @@ export const ProfileHoverCard = ({
     }
   )
 
-  const sentQuery = useQuery<FriendRequestDto[], AxiosError<{ message?: string }>, FriendRequestDto[]>(
-    ['friend-requests', 'sent'],
-    async () => {
-      return getSentFriendRequests(api)
-    },
-    {
-      enabled: open && !isSelf,
-      retry: false,
-    }
-  )
-
   const isFriend = friendQuery.data?.isFriend ?? false
-  const pendingSentRequest =
-    sentQuery.data?.find((request) => request.receiverId === id && request.status === 'PENDING') ?? null
+  const pendingRequest = friendQuery.data?.pendingRequest ?? null
   const isChecking = friendQuery.isFetching && !friendQuery.data
   const avatarNode = href ? (
     <Link href={href} className='inline-block'>
@@ -94,19 +83,25 @@ export const ProfileHoverCard = ({
   )
 
   const onAddFriend = async () => {
-    if (isAdding || isFriend || pendingSentRequest) return
+    if (isAdding || isFriend || pendingRequest) return
 
     try {
       setIsAdding(true)
       const createdRequest = await sendFriendRequest(api, id)
 
-      queryClient.setQueryData<FriendRequestDto[]>(['friend-requests', 'sent'], (current) => {
-        if (!current) {
-          return [createdRequest]
-        }
-
-        return [createdRequest, ...current.filter((item) => item.id !== createdRequest.id)]
-      })
+      queryClient.setQueryData<FriendshipInfoDto>(['friend-status', id], (current) => ({
+        ...(current ?? {
+          id,
+          name,
+          imageUrl: imageUrl ?? '',
+          isFriend: false,
+        }),
+        isFriend: false,
+        pendingRequest: {
+          id: createdRequest.id,
+          direction: 'sent',
+        },
+      }))
 
       toast({
         title: 'Friend request sent',
@@ -128,19 +123,22 @@ export const ProfileHoverCard = ({
   }
 
   const onCancelRequest = async () => {
-    if (isAdding || !pendingSentRequest) return
+    if (isAdding || !pendingRequest) return
 
     try {
       setIsAdding(true)
-      await cancelFriendRequest(api, pendingSentRequest.id)
+      await cancelFriendRequest(api, pendingRequest.id)
 
-      queryClient.setQueryData<FriendRequestDto[]>(['friend-requests', 'sent'], (current) => {
-        if (!current) {
-          return []
-        }
-
-        return current.filter((request) => request.id !== pendingSentRequest.id)
-      })
+      queryClient.setQueryData<FriendshipInfoDto>(['friend-status', id], (current) => ({
+        ...(current ?? {
+          id,
+          name,
+          imageUrl: imageUrl ?? '',
+          isFriend: false,
+        }),
+        isFriend: false,
+        pendingRequest: null,
+      }))
 
       toast({
         title: 'Request canceled',
@@ -154,6 +152,80 @@ export const ProfileHoverCard = ({
         description:
           err.response?.data?.message ??
           'Failed to cancel friend request. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
+  const onAcceptRequest = async () => {
+    if (isAdding || !pendingRequest || pendingRequest.direction !== 'received') return
+
+    try {
+      setIsAdding(true)
+      await acceptFriendRequest(api, pendingRequest.id)
+
+      queryClient.setQueryData<FriendshipInfoDto>(['friend-status', id], (current) => ({
+        ...(current ?? {
+          id,
+          name,
+          imageUrl: imageUrl ?? '',
+          isFriend: false,
+        }),
+        isFriend: true,
+        pendingRequest: null,
+      }))
+
+      toast({
+        title: 'Friend request accepted',
+        description: `You are now friends with ${name}`,
+        variant: 'success'
+      })
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>
+      toast({
+        title: 'Cannot accept request',
+        description:
+          err.response?.data?.message ??
+          'Failed to accept friend request. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
+  const onRejectRequest = async () => {
+    if (isAdding || !pendingRequest || pendingRequest.direction !== 'received') return
+
+    try {
+      setIsAdding(true)
+      await rejectFriendRequest(api, pendingRequest.id)
+
+      queryClient.setQueryData<FriendshipInfoDto>(['friend-status', id], (current) => ({
+        ...(current ?? {
+          id,
+          name,
+          imageUrl: imageUrl ?? '',
+          isFriend: false,
+        }),
+        isFriend: false,
+        pendingRequest: null,
+      }))
+
+      toast({
+        title: 'Friend request rejected',
+        description: `You rejected ${name}'s request`,
+        variant: 'success'
+      })
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>
+      toast({
+        title: 'Cannot reject request',
+        description:
+          err.response?.data?.message ??
+          'Failed to reject friend request. Please try again.',
         variant: 'destructive'
       })
     } finally {
@@ -222,26 +294,47 @@ export const ProfileHoverCard = ({
             </div>
           </div>
           <div className='mt-2 text-right'>
-            <button
-              type='button'
-              onClick={isFriend ? onRemoveFriend : pendingSentRequest ? onCancelRequest : onAddFriend}
-              disabled={isAdding || isChecking}
-              className={`px-3 py-1 rounded text-white text-xs disabled:opacity-60 disabled:cursor-not-allowed ${isFriend ? 'bg-red-600 hover:bg-red-700' : pendingSentRequest ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-            >
-              {isChecking
-                ? 'Checking...'
-                : isAdding
-                  ? isFriend
-                    ? 'Removing...'
-                    : pendingSentRequest
-                      ? 'Canceling...'
-                      : 'Sending...'
-                  : isFriend
-                    ? 'Remove friend'
-                    : pendingSentRequest
-                      ? 'Cancel request'
-                      : 'Add friend'}
-            </button>
+            {pendingRequest?.direction === 'received' ? (
+              <div className='flex justify-end gap-2'>
+                <button
+                  type='button'
+                  onClick={onAcceptRequest}
+                  disabled={isAdding || isChecking}
+                  className='px-3 py-1 rounded text-white text-xs bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed'
+                >
+                  Accept
+                </button>
+                <button
+                  type='button'
+                  onClick={onRejectRequest}
+                  disabled={isAdding || isChecking}
+                  className='px-3 py-1 rounded text-white text-xs bg-zinc-600 hover:bg-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed'
+                >
+                  Reject
+                </button>
+              </div>
+            ) : (
+              <button
+                type='button'
+                onClick={isFriend ? onRemoveFriend : pendingRequest ? onCancelRequest : onAddFriend}
+                disabled={isAdding || isChecking}
+                className={`px-3 py-1 rounded text-white text-xs disabled:opacity-60 disabled:cursor-not-allowed ${isFriend ? 'bg-red-600 hover:bg-red-700' : pendingRequest ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+              >
+                {isChecking
+                  ? 'Checking...'
+                  : isAdding
+                    ? isFriend
+                      ? 'Removing...'
+                      : pendingRequest
+                        ? 'Canceling...'
+                        : 'Sending...'
+                    : isFriend
+                      ? 'Remove friend'
+                      : pendingRequest
+                        ? 'Cancel request'
+                        : 'Add friend'}
+              </button>
+            )}
           </div>
         </div>
       )}

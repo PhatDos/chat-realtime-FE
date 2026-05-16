@@ -1,6 +1,7 @@
 import type { FeedComment, FeedPost } from "@/components/newsfeed/types";
 
 export const POSTS_EVENTS_URL = `${process.env.NEXT_PUBLIC_SITE_URL}/posts/events`;
+export const FRIEND_REQUESTS_EVENTS_URL = `${process.env.NEXT_PUBLIC_SITE_URL}/friend-requests/events`;
 
 export const buildBearerHeaders = (token: string | null | undefined) => {
   const headers: Record<string, string> = {};
@@ -8,7 +9,6 @@ export const buildBearerHeaders = (token: string | null | undefined) => {
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-
   return headers;
 };
 
