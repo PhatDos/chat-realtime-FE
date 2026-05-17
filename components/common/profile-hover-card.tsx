@@ -42,6 +42,14 @@ export const ProfileHoverCard = ({
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
+  const refetchNotificationContent = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['friend-requests', 'incoming'] }),
+      queryClient.invalidateQueries({ queryKey: ['friend-requests', 'sent'] }),
+      queryClient.invalidateQueries({ queryKey: ['friend-requests', 'incoming', 'envelope'] }),
+    ])
+  }
+
   const friendQuery = useQuery<FriendshipInfoDto, AxiosError<{ message?: string }>, FriendshipInfoDto>(
     ['friend-status', id],
     async () => {
@@ -103,6 +111,8 @@ export const ProfileHoverCard = ({
         },
       }))
 
+      await refetchNotificationContent()
+
       toast({
         title: 'Friend request sent',
         description: `Your friend request has been sent to ${name}`,
@@ -139,6 +149,8 @@ export const ProfileHoverCard = ({
         isFriend: false,
         pendingRequest: null,
       }))
+
+      await refetchNotificationContent()
 
       toast({
         title: 'Request canceled',
@@ -177,6 +189,8 @@ export const ProfileHoverCard = ({
         pendingRequest: null,
       }))
 
+      await refetchNotificationContent()
+
       toast({
         title: 'Friend request accepted',
         description: `You are now friends with ${name}`,
@@ -214,6 +228,8 @@ export const ProfileHoverCard = ({
         pendingRequest: null,
       }))
 
+      await refetchNotificationContent()
+
       toast({
         title: 'Friend request rejected',
         description: `You rejected ${name}'s request`,
@@ -247,6 +263,8 @@ export const ProfileHoverCard = ({
         }),
         isFriend: false,
       })
+
+      await refetchNotificationContent()
 
       toast({
         title: 'Friend removed',

@@ -3,13 +3,14 @@ import type {
   AcceptFriendRequestResponse,
   FriendRequestDto,
   FriendshipInfoDto,
+  FriendRequestListItemDto,
 } from "@/types/api/friendship";
 
 type FriendRequestsEnvelope = {
   status: boolean;
   code: number;
   data: {
-    items: FriendRequestDto[];
+    items: FriendRequestListItemDto[];
     count: number;
     skip: number;
     limit: number;

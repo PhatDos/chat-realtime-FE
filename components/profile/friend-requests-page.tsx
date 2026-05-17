@@ -19,9 +19,9 @@ import {
   getSentFriendRequests,
   rejectFriendRequest,
 } from "@/services/friends-client-service";
-import type { FriendRequestDto } from "@/types/api/friendship";
+import type { FriendRequestListItemDto } from "@/types/api/friendship";
 
-const getRequestStatusBadgeClass = (status: FriendRequestDto["status"]) => {
+const getRequestStatusBadgeClass = (status: FriendRequestListItemDto["status"]) => {
   if (status === "PENDING") {
     return "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300";
   }
@@ -39,9 +39,9 @@ export const FriendRequestsPage = () => {
   const { toast } = useToast();
 
   const incomingQuery = useQuery<
-    FriendRequestDto[],
+    FriendRequestListItemDto[],
     AxiosError<{ message?: string }>,
-    FriendRequestDto[]
+    FriendRequestListItemDto[]
   >({
     queryKey: ["friend-requests", "incoming"],
     queryFn: async () => getIncomingFriendRequests(api),
@@ -49,9 +49,9 @@ export const FriendRequestsPage = () => {
   });
 
   const sentQuery = useQuery<
-    FriendRequestDto[],
+    FriendRequestListItemDto[],
     AxiosError<{ message?: string }>,
-    FriendRequestDto[]
+    FriendRequestListItemDto[]
   >({
     queryKey: ["friend-requests", "sent"],
     queryFn: async () => getSentFriendRequests(api),
@@ -62,6 +62,7 @@ export const FriendRequestsPage = () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming"] }),
       queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] }),
+      queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] }),
       queryClient.invalidateQueries({ queryKey: ["friend-status"] }),
     ]);
   };
@@ -191,10 +192,10 @@ export const FriendRequestsPage = () => {
               >
                 <CardContent className="p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <UserAvatar src={request.sender?.imageUrl} className="h-10 w-10" />
+                    <UserAvatar src={request.actorProfile?.imageUrl} className="h-10 w-10" />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">
-                        {request.sender?.name ?? "Unknown sender"}
+                        {request.actorProfile?.name ?? "Unknown sender"}
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                         <Clock3 className="h-3 w-3" />
@@ -252,7 +253,7 @@ export const FriendRequestsPage = () => {
               >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold flex items-center justify-between gap-3">
-                    <span className="truncate">{request.receiver?.name ?? "Unknown receiver"}</span>
+                    <span className="truncate">{request.actorProfile?.name ?? "Unknown receiver"}</span>
                     <Badge className={getRequestStatusBadgeClass(request.status)}>
                       {request.status}
                     </Badge>
@@ -260,7 +261,7 @@ export const FriendRequestsPage = () => {
                 </CardHeader>
                 <CardContent className="pt-0 pb-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <UserAvatar src={request.receiver?.imageUrl} className="h-9 w-9" />
+                    <UserAvatar src={request.actorProfile?.imageUrl} className="h-9 w-9" />
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
                       Sent {new Date(request.createdAt).toLocaleString()}
                     </p>

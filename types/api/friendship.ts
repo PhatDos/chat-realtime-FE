@@ -28,6 +28,20 @@ export interface FriendRequestDto {
   receiver?: ProfileLite;
 }
 
+// List response item shape (enriched to match SSE/list contract)
+export interface FriendRequestListItemDto {
+  id: string;
+  fromProfileId: string;
+  toProfileId: string;
+  status: FriendRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  // actorProfile is the profile of the actor relevant for the list:
+  // - for incoming list: the sender
+  // - for sent list: the receiver
+  actorProfile?: ProfileLite;
+}
+
 export interface FriendshipDto {
   id: string;
   userOneId: string;

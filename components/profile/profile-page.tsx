@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { AxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   MessageCircle,
   UserPlus,
@@ -48,7 +49,16 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
   const [isAdding, setIsAdding] = useState(false);
   const [posts, setPosts] = useState<FeedPost[]>(profile.posts);
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const refetchNotificationContent = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming"] }),
+      queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] }),
+      queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] }),
+    ]);
+  };
 
   const isOwnProfile = targetProfileId === currentUserId;
 
@@ -84,6 +94,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setPendingRequestId(request.id ?? null);
       setPendingRequestDirection("sent");
       setIsFriend(false);
+      await refetchNotificationContent();
 
       toast({
         title: "Friend request sent",
@@ -114,6 +125,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       await cancelFriendRequest(api, pendingRequestId);
       setPendingRequestId(null);
       setPendingRequestDirection(null);
+      await refetchNotificationContent();
 
       toast({
         title: "Request canceled",
@@ -145,6 +157,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setIsFriend(false);
       setPendingRequestId(null);
       setPendingRequestDirection(null);
+      await refetchNotificationContent();
 
       toast({
         title: "Friend removed",
@@ -246,6 +259,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setPendingRequestId(null);
       setPendingRequestDirection(null);
       setIsFriend(true);
+      await refetchNotificationContent();
 
       toast({
         title: "Friend request accepted",
@@ -276,6 +290,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       await rejectFriendRequest(api, pendingRequestId);
       setPendingRequestId(null);
       setPendingRequestDirection(null);
+      await refetchNotificationContent();
 
       toast({
         title: "Friend request rejected",
