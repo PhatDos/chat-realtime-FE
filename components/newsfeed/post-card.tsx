@@ -55,6 +55,7 @@ export const PostCard = ({ post, onLike, currentUserId, onDelete, isDeleting = f
               currentProfileId={currentUserId}
               href={`/profile/${post.author.id}`}
               className="h-9 w-9"
+              badgeClassName="bottom-1 right-1"
             />
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{post.author.name}</p>

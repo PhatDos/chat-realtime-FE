@@ -64,6 +64,18 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       // Join profile room after connection
       socketInstance.emit("profile:join", { profileId });
       console.log("👤 Emitted profile:join for profileId:", profileId);
+      // Start heartbeat to keep presence alive
+      try {
+        const hb = setInterval(() => {
+          socketInstance.emit("heartbeat", { profileId });
+        }, 30000);
+
+        socketInstance.on("disconnect", () => {
+          clearInterval(hb);
+        });
+      } catch {
+        // ignore
+      }
     });
     socketInstance.on("disconnect", () => {
       setIsConnected(false);
@@ -73,7 +85,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     setSocket(socketInstance);
 
     return () => {
-      socketInstance.disconnect();
+      try {
+        socketInstance.disconnect();
+      } catch {
+        /* ignore */
+      }
     };
   }, [profileId]);
 

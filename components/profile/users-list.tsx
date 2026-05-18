@@ -12,7 +12,7 @@ interface UsersListProps {
   currentUserId?: string;
 }
 
-export const UsersList = ({ currentUserId }: UsersListProps) => {
+export const UsersList = (_props: UsersListProps) => {
   const users = getAllMockUsers();
 
   return (

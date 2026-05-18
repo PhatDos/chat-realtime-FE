@@ -44,7 +44,7 @@ export const NotificationBell = () => {
 					<Bell className="h-5 w-5" />
 					{incomingCount > 0 && (
 						<Badge
-							className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs font-bold bg-red-500 hover:bg-red-600"
+							className="absolute -top-1 -right-1 text-white h-5 w-5 p-0 flex items-center justify-center text-xs font-bold bg-red-500 hover:bg-red-600"
 							variant="default"
 						>
 							{incomingCount > 99 ? "99+" : incomingCount}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { usePresence } from "@/hooks/use-presence";
 import { Button } from "@/components/ui/button";
 import { UserPlus, MessageCircle, Mail, Users } from "lucide-react";
 
@@ -57,7 +58,12 @@ const MOCK_FRIENDS: Friend[] = [
 ];
 
 export const FriendList = ({ friends = MOCK_FRIENDS }: FriendListProps) => {
-  const onlineFriends = friends.filter((f) => f.status === "online");
+  const ids = friends.map((f) => f.id);
+  const { presence } = usePresence(ids);
+
+  const onlineFriends = friends.filter((f) =>
+    presence.hasOwnProperty(f.id) ? presence[f.id] : f.status === "online"
+  );
 
   return (
     <div className="sticky top-20 h-fit space-y-4">
@@ -69,7 +75,7 @@ export const FriendList = ({ friends = MOCK_FRIENDS }: FriendListProps) => {
       </Link>
 
       <Link href="/friend-requests">
-        <Button variant="outline" size="sm" className="w-full gap-2">
+        <Button variant="outline" size="sm" className="w-full gap-2 mt-3">
           <Mail className="h-4 w-4" />
           Friend Requests
         </Button>
@@ -86,21 +92,22 @@ export const FriendList = ({ friends = MOCK_FRIENDS }: FriendListProps) => {
             <Link key={friend.id} href={`/profile/${friend.id}`}>
               <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition group">
                 <div className="relative">
-                  <UserAvatar src={friend.imageUrl} className="h-9 w-9" />
-                  <div
-                    className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#2b2d31] ${
-                      friend.status === "online"
-                        ? "bg-green-500"
-                        : "bg-zinc-400"
-                    }`}
-                  />
+                  <UserAvatar src={friend.imageUrl} className="h-9 w-9" isOnline={
+                    presence.hasOwnProperty(friend.id) ? presence[friend.id] : friend.status === "online"
+                  } />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-zinc-900 dark:text-zinc-50 truncate">
                     {friend.name}
                   </p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {friend.status === "online" ? "Active now" : "Offline"}
+                    {presence.hasOwnProperty(friend.id)
+                      ? presence[friend.id]
+                        ? "Active now"
+                        : "Offline"
+                      : friend.status === "online"
+                      ? "Active now"
+                      : "Offline"}
                   </p>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition" onClick={(e) => e.preventDefault()}>

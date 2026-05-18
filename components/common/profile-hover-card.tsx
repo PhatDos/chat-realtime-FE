@@ -17,6 +17,8 @@ import {
 import type { FriendshipInfoDto } from '@/types/api/friendship'
 import GlareHover from '@/components/animation/glare-hover/GlareHover'
 import { UserAvatar } from './user-avatar'
+import { usePresence } from '@/hooks/use-presence'
+import { cn } from '@/lib/utils'
 
 interface ProfileHoverCardProps {
   id: string
@@ -25,6 +27,7 @@ interface ProfileHoverCardProps {
   currentProfileId?: string
   className?: string
   href?: string
+  badgeClassName?: string
 }
 
 export const ProfileHoverCard = ({
@@ -33,7 +36,8 @@ export const ProfileHoverCard = ({
   imageUrl,
   currentProfileId,
   className,
-  href
+  href,
+  badgeClassName,
 }: ProfileHoverCardProps) => {
   const isSelf = id === currentProfileId
   const [open, setOpen] = useState(false)
@@ -64,30 +68,55 @@ export const ProfileHoverCard = ({
   const isFriend = friendQuery.data?.isFriend ?? false
   const pendingRequest = friendQuery.data?.pendingRequest ?? null
   const isChecking = friendQuery.isFetching && !friendQuery.data
-  const avatarNode = href ? (
-    <Link href={href} className='inline-block'>
-      <UserAvatar src={imageUrl} className={className} />
-    </Link>
-  ) : (
-    <UserAvatar src={imageUrl} className={className} />
-  )
+  const { presence } = usePresence([id])
+  const isOnline = presence[id] ?? false
+  const showPresenceBadge = !isSelf && isOnline
+  const badgePositionClassName = badgeClassName ?? 'bottom-0 right-0'
 
   const glareAvatarNode = (
-    <GlareHover
-      width='fit-content'
-      height='fit-content'
-      background='transparent'
-      borderRadius='9999px'
-      borderColor='transparent'
-      glareColor='#ffffff'
-      glareOpacity={0.3}
-      glareAngle={-30}
-      glareSize={300}
-      transitionDuration={1500}
-      playOnce={false}
-    >
-      {avatarNode}
-    </GlareHover>
+    <div className='relative inline-block overflow-visible'>
+      {href ? (
+        <Link href={href} className='inline-block'>
+          <GlareHover
+            width='fit-content'
+            height='fit-content'
+            background='transparent'
+            borderRadius='9999px'
+            borderColor='transparent'
+            glareColor='#ffffff'
+            glareOpacity={0.3}
+            glareAngle={-30}
+            glareSize={300}
+            transitionDuration={1500}
+            playOnce={false}
+          >
+            <UserAvatar src={imageUrl} className={className} isOnline={false} />
+          </GlareHover>
+        </Link>
+      ) : (
+        <GlareHover
+          width='fit-content'
+          height='fit-content'
+          background='transparent'
+          borderRadius='9999px'
+          borderColor='transparent'
+          glareColor='#ffffff'
+          glareOpacity={0.3}
+          glareAngle={-30}
+          glareSize={300}
+          transitionDuration={1500}
+          playOnce={false}
+        >
+          <UserAvatar src={imageUrl} className={className} isOnline={false} />
+        </GlareHover>
+      )}
+      {showPresenceBadge && (
+        <span className={cn(
+          'pointer-events-none absolute z-20 block h-3 w-3 rounded-full border-2 border-white bg-green-500 shadow dark:border-zinc-900',
+          badgePositionClassName,
+        )} />
+      )}
+    </div>
   )
 
   const onAddFriend = async () => {
@@ -288,10 +317,10 @@ export const ProfileHoverCard = ({
   if (isSelf) {
     return href ? (
       <Link href={href} className='inline-block'>
-        <UserAvatar src={imageUrl} className={className} />
+        <UserAvatar src={imageUrl} className={className} isOnline={false} />
       </Link>
     ) : (
-      <UserAvatar src={imageUrl} className={className} />
+      <UserAvatar src={imageUrl} className={className} isOnline={false} />
     )
   }
 
@@ -304,9 +333,9 @@ export const ProfileHoverCard = ({
       {glareAvatarNode}
 
       {open && (
-        <div className='absolute z-50 right-0 mt-0 -mx-36 w-48 bg-white dark:bg-[#1f2937] shadow-lg rounded p-2 text-sm'>
+        <div className='absolute z-50 left-1/2 top-full mt-2 w-48 -translate-x-1/2 rounded bg-white p-2 text-sm shadow-lg dark:bg-[#1f2937]'>
           <div className='flex items-center'>
-            <UserAvatar src={imageUrl} className='h-10 w-10 mr-2' />
+            <UserAvatar src={imageUrl} className='h-10 w-10 mr-2' isOnline={isOnline} badgeClassName='bottom-0 right-0' />
             <div className='flex-1'>
               <div className='font-semibold text-sm text-black dark:text-white'>{name}</div>
             </div>

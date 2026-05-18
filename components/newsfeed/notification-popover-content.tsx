@@ -9,6 +9,7 @@ import { Check, X } from "lucide-react";
 import { useApiClient } from "@/hooks/use-api-client";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import type { FriendRequestListItemDto, FriendshipInfoDto } from "@/types/api/friendship";
 import {
   getIncomingFriendRequests,
@@ -26,6 +27,7 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
   const api = useApiClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const router = useRouter();
 
   const incomingQuery = useQuery<FriendRequestListItemDto[]>(["friend-requests", "incoming"], async () => {
     return getIncomingFriendRequests(api);
@@ -228,11 +230,10 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
                           <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-50">{request.actorProfile?.name ?? request.fromProfileId}</p>
                           <p className="text-xs text-zinc-500 dark:text-zinc-400">{formatTime(new Date(request.createdAt))}</p>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1.5">
                           <Button
                             size="sm"
-                            variant="default"
-                            className="h-8 w-8 p-0 bg-green-500 hover:bg-green-600"
+                            className="h-8 w-8 p-0 bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 hover:scale-110 active:scale-95 focus:ring-2 focus:ring-green-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-800"
                             onClick={() => {
                               if (!request.id) {
                                 console.warn("accept: missing request id", request);
@@ -241,12 +242,11 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
                               acceptMutation.mutate(request);
                             }}
                           >
-                            <Check className="h-4 w-4" />
+                            <Check className="h-4 w-4 font-bold" />
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 border-2 border-red-400 hover:border-red-500 bg-white dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 hover:text-red-600 shadow-sm hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:ring-2 focus:ring-red-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-900"
                             onClick={() => {
                               if (!request.id) {
                                 console.warn("reject: missing request id", request);
@@ -255,7 +255,7 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
                               rejectMutation.mutate(request);
                             }}
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-4 w-4 font-bold" />
                           </Button>
                         </div>
                       </div>
@@ -292,8 +292,7 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
                         </div>
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-8 px-2 text-xs"
+                          className="h-8 px-2 text-xs font-medium border-2 border-amber-400 hover:border-amber-500 bg-white dark:bg-zinc-800 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 hover:text-amber-700 shadow-sm hover:shadow-lg hover:shadow-amber-500/30 transition-all duration-300 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-amber-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-900"
                           onClick={() => {
                             if (!request.id) {
                               console.warn("cancel: missing request id", request);
@@ -316,8 +315,14 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
       </Tabs>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-700">
-        <Button variant="outline" className="w-full text-xs h-8" onClick={onClose}>
+      <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-700 bg-gradient-to-r from-zinc-50 to-blue-50 dark:from-zinc-800 dark:to-blue-900/20">
+        <Button 
+          className="w-full text-xs font-medium h-8 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-800" 
+          onClick={() => {
+            onClose?.();
+            router.push("/friend-requests");
+          }}
+        >
           View all requests
         </Button>
       </div>
