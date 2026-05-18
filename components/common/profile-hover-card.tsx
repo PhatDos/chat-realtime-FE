@@ -333,7 +333,7 @@ export const ProfileHoverCard = ({
       {glareAvatarNode}
 
       {open && (
-        <div className='absolute z-50 left-1/2 top-full mt-2 w-48 -translate-x-1/2 rounded bg-white p-2 text-sm shadow-lg dark:bg-[#1f2937]'>
+        <div className='absolute z-50 left-24 top-full w-48 -translate-x-1/2 rounded bg-white p-2 text-sm shadow-lg dark:bg-[#1f2937]'>
           <div className='flex items-center'>
             <UserAvatar src={imageUrl} className='h-10 w-10 mr-2' isOnline={isOnline} badgeClassName='bottom-0 right-0' />
             <div className='flex-1'>
