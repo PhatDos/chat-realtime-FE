@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { getAllMockUsers } from "./mock-profile-data";
+import { usePresence } from "@/hooks/use-presence";
 
 interface UsersListProps {
   currentUserId?: string;
@@ -14,6 +15,8 @@ interface UsersListProps {
 
 export const UsersList = (_props: UsersListProps) => {
   const users = getAllMockUsers();
+  const profileIds = users.map((u) => u.id);
+  const { presence } = usePresence(profileIds);
 
   return (
     <div className="space-y-4">
@@ -47,7 +50,7 @@ export const UsersList = (_props: UsersListProps) => {
                 />
                 <div
                   className={`h-3 w-3 rounded-full ${
-                    user.status === "online"
+                    presence[user.id] === true
                       ? "bg-green-500"
                       : user.status === "away"
                       ? "bg-yellow-500"

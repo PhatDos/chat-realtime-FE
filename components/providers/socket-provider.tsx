@@ -57,34 +57,80 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       reconnectionAttempts: 5,
     });
 
+    let heartbeatInterval: NodeJS.Timeout | null = null;
+
+    const emitPresenceJoin = () => {
+      socketInstance.emit("profile:join", { profileId });
+      console.log("📍 Emitted profile:join for profileId:", profileId);
+    };
+
+    const emitPresencePing = () => {
+      socketInstance.emit("presence:ping", { profileId });
+      console.log("💓 Emitted presence:ping for profileId:", profileId);
+    };
+
+    const startHeartbeat = () => {
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      heartbeatInterval = setInterval(() => {
+        emitPresencePing();
+      }, 30000); // 30s heartbeat
+    };
+
+    const stopHeartbeat = () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+      }
+    };
+
     socketInstance.on("connect", () => {
       setIsConnected(true);
       console.log("Socket connected:", socketInstance.id);
-      
-      // Join profile room after connection
-      socketInstance.emit("profile:join", { profileId });
-      console.log("👤 Emitted profile:join for profileId:", profileId);
-      // Start heartbeat to keep presence alive
-      try {
-        const hb = setInterval(() => {
-          socketInstance.emit("heartbeat", { profileId });
-        }, 30000);
-
-        socketInstance.on("disconnect", () => {
-          clearInterval(hb);
-        });
-      } catch {
-        // ignore
-      }
+      emitPresenceJoin();
+      startHeartbeat();
     });
+
     socketInstance.on("disconnect", () => {
       setIsConnected(false);
+      stopHeartbeat();
       console.log("Socket DISconnected:", socketInstance.id);
     });
+
+    socketInstance.on("reconnect", () => {
+      console.log("Socket reconnected:", socketInstance.id);
+      emitPresenceJoin();
+      startHeartbeat();
+    });
+
+    // Visibility/focus handling
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("Tab became visible, sending immediate ping");
+        emitPresencePing();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log("Window focused, sending immediate ping");
+      emitPresencePing();
+    };
+
+    // Page unload handler
+    const handleBeforeUnload = () => {
+      emitPresencePing();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     setSocket(socketInstance);
 
     return () => {
+      stopHeartbeat();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       try {
         socketInstance.disconnect();
       } catch {

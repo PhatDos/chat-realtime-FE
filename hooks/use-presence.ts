@@ -11,6 +11,7 @@ export function usePresence(profileIds: string[] = []) {
   const [loading, setLoading] = useState(true);
   const idsKey = profileIds.join(",");
 
+  // Initial batch fetch of presence
   useEffect(() => {
     let mounted = true;
     if (profileIds.length === 0) {
@@ -18,21 +19,21 @@ export function usePresence(profileIds: string[] = []) {
       return;
     }
 
-    // Default mock for UI: mark all requested profiles as online
-    const mocked: Record<string, boolean> = {};
-    profileIds.forEach((id) => (mocked[id] = true));
-
-    // Avoid unnecessary state updates that can trigger rerenders
-    const alreadyEqual =
-      Object.keys(presence).length === Object.keys(mocked).length &&
-      Object.keys(mocked).every((k) => presence[k] === mocked[k]);
-
-    if (!alreadyEqual && mounted) {
-      setPresence(mocked);
-      setLoading(false);
-    } else if (mounted) {
-      setLoading(false);
-    }
+    (async () => {
+      try {
+        const res = await api.post<{ data: Record<string, boolean> }>(
+          "/presence",
+          { profileIds }
+        );
+        if (mounted) {
+          setPresence(res?.data ?? {});
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error fetching presence batch:", err);
+        if (mounted) setLoading(false);
+      }
+    })();
 
     return () => {
       mounted = false;

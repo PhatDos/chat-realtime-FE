@@ -19,6 +19,12 @@ import GlareHover from '@/components/animation/glare-hover/GlareHover'
 import { UserAvatar } from './user-avatar'
 import { usePresence } from '@/hooks/use-presence'
 import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface ProfileHoverCardProps {
   id: string
@@ -325,15 +331,21 @@ export const ProfileHoverCard = ({
   }
 
   return (
-    <div
-      className='relative inline-block'
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
-      {glareAvatarNode}
+    <TooltipProvider delayDuration={50}>
+      <Tooltip open={open} onOpenChange={setOpen}>
+        <TooltipTrigger asChild>
+          <div className='relative inline-block'>
+            {glareAvatarNode}
+          </div>
+        </TooltipTrigger>
 
-      {open && (
-        <div className='absolute z-50 left-24 top-full w-48 -translate-x-1/2 rounded bg-white p-2 text-sm shadow-lg dark:bg-[#1f2937]'>
+        <TooltipContent
+          side='bottom'
+          align='start'
+          sideOffset={0}
+          className='w-48 rounded bg-white p-2 text-sm text-left shadow-lg dark:bg-[#1f2937]'
+          hideArrow
+        >
           <div className='flex items-center'>
             <UserAvatar src={imageUrl} className='h-10 w-10 mr-2' isOnline={isOnline} badgeClassName='bottom-0 right-0' />
             <div className='flex-1'>
@@ -383,9 +395,9 @@ export const ProfileHoverCard = ({
               </button>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
