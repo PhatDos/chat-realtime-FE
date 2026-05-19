@@ -1,68 +1,70 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { usePresence } from "@/hooks/use-presence";
+import { useApiClient } from "@/hooks/use-api-client";
 import { Button } from "@/components/ui/button";
 import { UserPlus, MessageCircle, Mail, Users } from "lucide-react";
 
 interface Friend {
   id: string;
+  profileId: string;
   name: string;
   imageUrl: string;
-  status?: "online" | "offline";
+  isOnline: boolean;
+}
+
+interface FriendListResponse {
+  items: Friend[];
+  count: number;
+}
+
+interface ApiResponse<T> {
+  status: boolean;
+  code: number;
+  data: T;
+  message?: string;
+  timestamp?: string;
 }
 
 interface FriendListProps {
   friends?: Friend[];
 }
 
-const MOCK_FRIENDS: Friend[] = [
-  {
-    id: "1",
-    name: "Alice Johnson",
-    imageUrl: "/avatar-default-dark.svg",
-    status: "online",
-  },
-  {
-    id: "2",
-    name: "Bob Smith",
-    imageUrl: "/avatar-default-dark.svg",
-    status: "online",
-  },
-  {
-    id: "3",
-    name: "Carol Davis",
-    imageUrl: "/avatar-default-dark.svg",
-    status: "offline",
-  },
-  {
-    id: "4",
-    name: "David Wilson",
-    imageUrl: "/avatar-default-dark.svg",
-    status: "online",
-  },
-  {
-    id: "5",
-    name: "Emma Brown",
-    imageUrl: "/avatar-default-dark.svg",
-    status: "offline",
-  },
-  {
-    id: "6",
-    name: "Frank Miller",
-    imageUrl: "/avatar-default-dark.svg",
-    status: "online",
-  },
-];
+export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
+  const [friends, setFriends] = useState<Friend[]>(initialFriends || []);
+  const [loading, setLoading] = useState(!initialFriends);
+  const [error, setError] = useState<string | null>(null);
 
-export const FriendList = ({ friends = MOCK_FRIENDS }: FriendListProps) => {
-  const ids = friends.map((f) => f.id);
-  const { presence } = usePresence(ids);
+  const apiClient = useApiClient();
+  const profileIds = friends.map((f) => f.profileId);
+  const { presence } = usePresence(profileIds);
+
+  useEffect(() => {
+    if (initialFriends) return; // Skip if already provided
+
+    const fetchFriends = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get<ApiResponse<FriendListResponse>>("/friends");
+        setFriends(response.data.items || []);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load friends";
+        setError(message);
+        console.error("Failed to fetch friends:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFriends();
+  }, [apiClient, initialFriends]);
 
   const onlineFriends = friends.filter((f) =>
-    presence.hasOwnProperty(f.id) ? presence[f.id] : f.status === "online"
+    presence.hasOwnProperty(f.profileId) ? presence[f.profileId] : f.isOnline
   );
 
   return (
@@ -88,49 +90,66 @@ export const FriendList = ({ friends = MOCK_FRIENDS }: FriendListProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {friends.map((friend) => (
-            <Link key={friend.id} href={`/profile/${friend.id}`}>
-              <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition group">
-                <div className="relative">
-                  <UserAvatar src={friend.imageUrl} className="h-9 w-9" isOnline={
-                    presence.hasOwnProperty(friend.id) ? presence[friend.id] : friend.status === "online"
-                  } />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-zinc-900 dark:text-zinc-50 truncate">
-                    {friend.name}
-                  </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {presence.hasOwnProperty(friend.id)
-                      ? presence[friend.id]
+          {loading ? (
+            <p className="text-xs text-zinc-500">Loading friends...</p>
+          ) : error ? (
+            <p className="text-xs text-red-500">{error}</p>
+          ) : friends.length === 0 ? (
+            <p className="text-xs text-zinc-500">No friends yet</p>
+          ) : (
+            friends.map((friend) => (
+              <Link key={friend.id} href={`/profile/${friend.profileId}`}>
+                <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition group">
+                  <div className="relative">
+                    <UserAvatar
+                      src={friend.imageUrl}
+                      className="h-9 w-9"
+                      isOnline={
+                        presence.hasOwnProperty(friend.profileId)
+                          ? presence[friend.profileId]
+                          : friend.isOnline
+                      }
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-zinc-900 dark:text-zinc-50 truncate">
+                      {friend.name}
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {presence.hasOwnProperty(friend.profileId)
+                        ? presence[friend.profileId]
+                          ? "Active now"
+                          : "Offline"
+                        : friend.isOnline
                         ? "Active now"
-                        : "Offline"
-                      : friend.status === "online"
-                      ? "Active now"
-                      : "Offline"}
-                  </p>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition" onClick={(e) => e.preventDefault()}>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    title="Send message"
+                        : "Offline"}
+                    </p>
+                  </div>
+                  <div
+                    className="flex gap-1 opacity-0 group-hover:opacity-100 transition"
+                    onClick={(e) => e.preventDefault()}
                   >
-                    <MessageCircle className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    title="Add friend"
-                  >
-                    <UserPlus className="h-3.5 w-3.5" />
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      title="Send message"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      title="Add friend"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -152,7 +171,12 @@ export const FriendList = ({ friends = MOCK_FRIENDS }: FriendListProps) => {
                     {suggestion.name}
                   </p>
                 </div>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={(e) => e.preventDefault()}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={(e) => e.preventDefault()}
+                >
                   Add
                 </Button>
               </div>
