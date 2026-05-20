@@ -112,16 +112,16 @@ export const DirectChatMessages = ({
 
   if (status === "loading")
     return (
-      <div className="flex flex-col flex-1 justify-center items-center">
-        <Loader2 className="h-7 w-7 text-zinc-500 animate-spin my-4" />
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading...</p>
+      <div className="flex flex-col flex-1 justify-center items-center bg-gradient-to-b from-white dark:from-zinc-900 to-gray-50 dark:to-zinc-950">
+        <Loader2 className="h-7 w-7 text-indigo-500 animate-spin my-4" />
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 animate-pulse">Loading messages...</p>
       </div>
     );
 
   if (status === "error")
     return (
-      <div className="flex flex-col flex-1 justify-center items-center">
-        <ServerCrash className="h-10 w-10 text-zinc-500 my-4" />
+      <div className="flex flex-col flex-1 justify-center items-center bg-gradient-to-b from-white dark:from-zinc-900 to-gray-50 dark:to-zinc-950">
+        <ServerCrash className="h-10 w-10 text-red-500 my-4" />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           There was an error while loading!
         </p>
@@ -129,7 +129,7 @@ export const DirectChatMessages = ({
     );
 
   return (
-    <div ref={chatRef} className="flex-1 flex flex-col py-4 overflow-y-auto">
+    <div ref={chatRef} className="flex-1 flex flex-col py-4 overflow-y-auto bg-gradient-to-b from-white dark:from-zinc-900 to-gray-50 dark:to-zinc-950">
       <div className="flex-1" />
       {!hasNextPage && <ChatWelcome type="conversation" name={name} />}
 

@@ -35,8 +35,15 @@ export const ChatVideoButton = () => {
         <ActionTooltip
             side="bottom" label={tooltipLabel}
         >
-            <button onClick={onClick} className="hover:opacity-75 transition mr-4">
-                <Icon className="h-6 w-6 text-zinc-500 dark:text-zinc-400"/>
+            <button 
+                onClick={onClick} 
+                className={`mr-4 p-2 rounded-lg transition-all duration-300 ${
+                    isVideo 
+                        ? 'bg-red-500/20 hover:bg-red-500/30 text-red-500 dark:text-red-400' 
+                        : 'hover:bg-indigo-500/20 text-zinc-500 dark:text-zinc-400 hover:text-indigo-500 dark:hover:text-indigo-400'
+                } hover:scale-110 active:scale-95`}
+            >
+                <Icon className="h-6 w-6"/>
             </button>
         </ActionTooltip>
         <LoadingOverlay isLoading={isPending} text={tooltipLabel} />

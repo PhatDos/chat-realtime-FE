@@ -190,7 +190,7 @@ export const ChannelChatInput = ({
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <div className='relative p-4 pb-6'>
+                <div className='relative p-4 pb-6 bg-gradient-to-b from-white dark:from-zinc-950 to-gray-50 dark:to-zinc-900 border border-neutral-200 dark:border-zinc-700'>
                   <button
                     type='button'
                     onClick={() =>
@@ -213,9 +213,7 @@ export const ChannelChatInput = ({
 
                   <Input
                     disabled={isLoading}
-                    className='px-14 pr-28 py-6 bg-zinc-200/90
-                                        dark:bg-zinc-700/75 border-none border-0 focus-visible:ring-0
-                                        focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-300'
+                    className='px-14 pr-28 py-6 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-950 dark:to-zinc-900 border border-neutral-200 dark:border-zinc-700 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-300 rounded-md transition-all duration-200'
                     placeholder={`Message #${name}`}
                     {...field}
                     ref={inputRef}

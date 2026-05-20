@@ -343,23 +343,26 @@ export const ProfileHoverCard = ({
           side='bottom'
           align='start'
           sideOffset={0}
-          className='w-48 rounded bg-white p-2 text-sm text-left shadow-lg dark:bg-[#1f2937]'
+          className='w-56 rounded-xl bg-gradient-to-br from-white to-gray-50 dark:from-zinc-800 dark:to-zinc-900 p-3 text-sm text-left shadow-xl border border-gray-200 dark:border-zinc-700 backdrop-blur-sm'
           hideArrow
         >
-          <div className='flex items-center'>
-            <UserAvatar src={imageUrl} className='h-10 w-10 mr-2' isOnline={isOnline} badgeClassName='bottom-0 right-0' />
+          <div className='flex items-center gap-3 pb-3'>
+            <UserAvatar src={imageUrl} className='h-12 w-12' isOnline={isOnline} badgeClassName='bottom-0 right-0' />
             <div className='flex-1'>
-              <div className='font-semibold text-sm text-black dark:text-white'>{name}</div>
+              <div className='font-bold text-sm bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent'>{name}</div>
+              <div className='text-xs text-zinc-500 dark:text-zinc-400 mt-0.5'>
+                {isOnline ? '🟢 Active' : '⚫ Offline'}
+              </div>
             </div>
           </div>
-          <div className='mt-2 text-right'>
+          <div className='mt-3 text-right'>
             {pendingRequest?.direction === 'received' ? (
               <div className='flex justify-end gap-2'>
                 <button
                   type='button'
                   onClick={onAcceptRequest}
                   disabled={isAdding || isChecking}
-                  className='px-3 py-1 rounded text-white text-xs bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed'
+                  className='px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100'
                 >
                   Accept
                 </button>
@@ -367,7 +370,7 @@ export const ProfileHoverCard = ({
                   type='button'
                   onClick={onRejectRequest}
                   disabled={isAdding || isChecking}
-                  className='px-3 py-1 rounded text-white text-xs bg-zinc-600 hover:bg-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed'
+                  className='px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gradient-to-r from-zinc-500 to-zinc-700 hover:from-zinc-600 hover:to-zinc-800 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100'
                 >
                   Reject
                 </button>
@@ -377,7 +380,13 @@ export const ProfileHoverCard = ({
                 type='button'
                 onClick={isFriend ? onRemoveFriend : pendingRequest ? onCancelRequest : onAddFriend}
                 disabled={isAdding || isChecking}
-                className={`px-3 py-1 rounded text-white text-xs disabled:opacity-60 disabled:cursor-not-allowed ${isFriend ? 'bg-red-600 hover:bg-red-700' : pendingRequest ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                className={`px-4 py-1.5 rounded-lg text-white text-xs font-medium shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                  isFriend 
+                    ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700' 
+                    : pendingRequest 
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700' 
+                      : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700'
+                }`}
               >
                 {isChecking
                   ? 'Checking...'

@@ -151,7 +151,7 @@ export const ChannelChatItem = React.memo(
     return (
       <div
         className={cn(
-          "relative group flex items-center hover:bg-black/5 p-4 transition w-full",
+          "relative group flex items-center hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 p-3 transition-all duration-200 w-full",
           isOwner && "justify-end",
         )}
       >
@@ -163,10 +163,10 @@ export const ChannelChatItem = React.memo(
         >
           <div className="cursor-pointer hover:drop-shadow-md transition">
             <ProfileHoverCard
-              id={memberId ?? ""}
+              id={member?.profileId ?? ""}
               name={memberName}
               imageUrl={memberImageUrl}
-              currentProfileId={currentMember.id}
+              currentProfileId={currentMember?.profileId ?? ""}
             />
           </div>
 
@@ -202,30 +202,33 @@ export const ChannelChatItem = React.memo(
               </div>
 
               {status === "sending" && (
-                <span className="text-xs opacity-50">Sending…</span>
+                <span className="text-xs opacity-50 animate-pulse flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce"></span>
+                  Sending…
+                </span>
               )}
 
               {status === "sent" && (
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
                   {timestamp}
                 </span>
               )}
 
               {canDeleteMessage && (
-                <div className={cn("hidden group-hover:flex absolute top-1/2 -translate-y-1/2 items-center gap-x-2 p-1 bg-white dark:bg-zinc-800 border rounded-sm",
+                <div className={cn("hidden group-hover:flex absolute top-1/2 -translate-y-1/2 items-center gap-x-2 p-2 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-800 dark:to-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded-lg shadow-lg",
                     !isOwner ? "right-[3%]" : "left-[3%]",
                 )}>
                   <ActionTooltip label="Delete">
                     <Trash
                       onClick={handleDelete}
-                      className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition"
+                      className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors hover:scale-110 duration-200"
                     />
                   </ActionTooltip>
                   {canEditMessage && (
                     <ActionTooltip label="Edit">
                       <Edit
                         onClick={() => setIsEditing(true)}
-                        className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition"
+                        className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors hover:scale-110 duration-200"
                       />
                     </ActionTooltip>
                   )}
@@ -238,26 +241,26 @@ export const ChannelChatItem = React.memo(
                 href={fileUrl!}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative aspect-square rounded-md mt-2 overflow-hidden border flex items-center bg-secondary h-48 w-48"
+                className="relative aspect-square rounded-lg mt-2 overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 flex items-center bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 h-48 w-48 hover:shadow-lg hover:scale-105 transition-all duration-300 group/image"
               >
                 <Image
                   src={fileUrl!}
                   alt={localContent}
                   fill
                   sizes="192px"
-                  className="object-cover"
+                  className="object-cover group-hover/image:brightness-110 transition-all duration-300"
                 />
               </a>
             )}
 
             {isPDF && (
-              <div className="relative flex items-center p-2 mt-2 rounded-md bg-background/10">
-                <FileIcon className="h-10 w-10 fill-indigo-200 stroke-indigo-400" />
+              <div className="relative flex items-center p-3 mt-2 rounded-lg bg-gradient-to-r from-indigo-100/50 to-purple-100/50 dark:from-indigo-950/50 dark:to-purple-950/50 border border-indigo-200 dark:border-indigo-800 hover:shadow-md transition-all duration-300 hover:scale-105 group/pdf">
+                <FileIcon className="h-10 w-10 fill-indigo-300 stroke-indigo-500 dark:fill-indigo-700 dark:stroke-indigo-400 group-hover/pdf:scale-110 transition-transform" />
                 <a
                   href={fileUrl!}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-2 text-sm text-indigo-500 dark:text-indigo-400 hover:underline"
+                  className="ml-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline font-medium transition-colors"
                 >
                   PDF file
                 </a>
@@ -270,18 +273,18 @@ export const ChannelChatItem = React.memo(
                   <div
                     onClick={() => setIsFlagRevealed(true)}
                     className={cn(
-                      "text-sm px-3 py-1 rounded bg-red-100 dark:bg-red-950 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 cursor-pointer hover:bg-red-200 dark:hover:bg-red-900 transition break-words w-fit max-w-[70%]",
+                      "text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-950 dark:to-rose-950 border-2 border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 cursor-pointer hover:from-red-200 hover:to-rose-200 dark:hover:from-red-900 dark:hover:to-rose-900 transition-all duration-200 break-words w-fit max-w-[70%] hover:shadow-md hover:scale-105",
                       isOwner ? "self-end" : "self-start",
                     )}
                   >
-                    <p className="text-xs">{"⚠️ " + (flagReason || "Negative content detected")}</p>
-                    <p className="text-xs opacity-70">Click to reveal</p>
+                    <p className="text-xs font-semibold">{"⚠️ " + (flagReason || "Negative content detected")}</p>
+                    <p className="text-xs opacity-70 mt-1">Click to reveal</p>
                   </div>
                 ) : (
                   <p
                     ref={contentRef}
                     className={cn(
-                      "text-sm text-zinc-600 dark:text-zinc-300 break-words break-all mr-1",
+                      "text-sm text-zinc-700 dark:text-zinc-200 break-words break-all mr-1 leading-relaxed",
                       isOwner ? "ml-24" : "mr-24",
                       !expanded && "line-clamp-2",
                       deleted &&
@@ -290,7 +293,7 @@ export const ChannelChatItem = React.memo(
                   >
                     {localContent}
                     {!deleted && isUpdated && status === "sent" && !isEditing && (
-                      <span className="text-[10px] mx-2 text-zinc-500 dark:text-zinc-400">
+                      <span className="text-[10px] mx-2 text-indigo-600 dark:text-indigo-400 font-medium">
                         (edited)
                       </span>
                     )}
@@ -302,9 +305,9 @@ export const ChannelChatItem = React.memo(
             {!fileUrl && !isEditing && (isOverflowing || expanded) && (
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="text-xs text-indigo-500 hover:underline mt-1 w-fit"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline mt-2 w-fit font-medium transition-colors"
               >
-                {expanded ? "Show less" : "Show more"}
+                {expanded ? "← Show less" : "Show more →"}
               </button>
             )}
 
@@ -324,7 +327,7 @@ export const ChannelChatItem = React.memo(
                             {...field}
                             disabled={form.formState.isSubmitting}
                             placeholder="Edited"
-                            className="p-2 bg-zinc-200/90 dark:bg-zinc-700/75 border-none focus-visible:ring-0 text-zinc-600 dark:text-zinc-200 text-right"
+                            className="p-2 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 border border-indigo-300 dark:border-indigo-700 focus-visible:ring-indigo-500 text-zinc-800 dark:text-zinc-100 text-right rounded-md transition-all duration-200"
                           />
                         </FormControl>
                       </FormItem>
@@ -334,6 +337,7 @@ export const ChannelChatItem = React.memo(
                     size="sm"
                     variant="default"
                     disabled={form.formState.isSubmitting}
+                    className="bg-gradient-to-r text-white from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 hover:shadow-lg hover:scale-105 active:scale-95"
                   >
                     save
                   </Button>

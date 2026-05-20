@@ -27,7 +27,9 @@ export const ChatHeader = ({
   return (
     <div
       className='text-md font-semibold px-3 flex items-center h-12
-        border-neutral-200 dark:border-gray-500 border-b-2'
+        bg-gradient-to-r from-white to-gray-50 dark:from-zinc-900 dark:to-zinc-800
+        border-neutral-200 dark:border-zinc-700 border-b shadow-sm
+        transition-all duration-300 hover:shadow-md'
     >
       {serverId && <MobileToggle serverId={serverId} />}
       {type === 'conversation' && conversations && currentProfileId && (
