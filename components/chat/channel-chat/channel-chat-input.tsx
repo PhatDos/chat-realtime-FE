@@ -13,6 +13,8 @@ import { ActionTooltip } from '../../common/action-tooltip'
 import { useSocket } from '@/components/providers/socket-provider'
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+import { useTransition } from 'react'
+import { LoadingOverlay } from '../../common/loading-overlay'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
@@ -46,11 +48,13 @@ export const ChannelChatInput = ({
   const queryClient = useQueryClient()
   const queryKey = chatQueryKey(query.channelId)
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   const onNavigateToLectureUpload = () => {
-    router.push(
-      `/lectures?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}`
-    )
+    const url = `/lectures?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}`
+    startTransition(() => {
+      void router.push(url)
+    })
   }
 
   const getAiSummaryContent = (data: unknown): string => {
@@ -178,6 +182,7 @@ export const ChannelChatInput = ({
 
   return (
     <Form {...form}>
+      <LoadingOverlay isLoading={isPending} text="Opening upload..." />
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <FormField
           control={form.control}

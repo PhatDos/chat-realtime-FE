@@ -3,6 +3,8 @@
 import { ConversationWithProfiles } from '@/types/api/message'
 import { ScrollArea } from '@radix-ui/react-scroll-area'
 import { useParams, useRouter } from 'next/navigation'
+import { useTransition } from 'react'
+import { LoadingOverlay } from '../common/loading-overlay'
 import { ProfileHoverCard } from '../common/profile-hover-card'
 import { cn } from '@/lib/utils'
 import { MessageSquare } from 'lucide-react'
@@ -18,9 +20,11 @@ export const ConversationSidebar = ({
 }: ConversationSidebarProps) => {
   const router = useRouter()
   const params = useParams()
+  const [isPending, startTransition] = useTransition()
 
   return (
     <div className='flex flex-col h-full flex-1 text-primary dark:bg-[#2B2D31] bg-[#f2f3f5]'>
+      <LoadingOverlay isLoading={isPending} text="Opening conversation..." />
       <div className='px-3 py-4 border-b border-zinc-200 dark:border-zinc-700'>
         <h2 className='text-lg font-semibold'>Direct Messages</h2>
       </div>
@@ -38,15 +42,19 @@ export const ConversationSidebar = ({
               return (
                 <div
                   key={conversation.id}
-                  onClick={() =>
-                    router.push(`/conversations/${otherProfile.id}`)
-                  }
+                  onClick={() => {
+                    startTransition(() => {
+                      void router.push(`/conversations/${otherProfile.id}`)
+                    })
+                  }}
                   role='button'
                   tabIndex={0}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault()
-                      router.push(`/conversations/${otherProfile.id}`)
+                      startTransition(() => {
+                        void router.push(`/conversations/${otherProfile.id}`)
+                      })
                     }
                   }}
                   className={cn(

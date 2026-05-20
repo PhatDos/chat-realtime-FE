@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { MemberRole, MemberWithProfileResponse } from "@/types/api/member";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { LoadingOverlay } from "../common/loading-overlay";
 import { ProfileHoverCard } from "../common/profile-hover-card";
 
 interface ServerMemberProps {
@@ -22,12 +24,15 @@ const roleIconMap = {
 export const ServerMember = ({ member }: ServerMemberProps) => {
   const params = useParams();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const icon = roleIconMap[member.role];
   const onClick = () => {
-    router.push(
-      `/servers/${params?.serverId}/conversations/${member.profile.id}`,
-    );
+    startTransition(() => {
+      void router.push(
+        `/servers/${params?.serverId}/conversations/${member.profile.id}`,
+      );
+    });
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -49,6 +54,7 @@ export const ServerMember = ({ member }: ServerMemberProps) => {
           "bg-zinc-700/50 dark:bg-zinc-700",
       )}
     >
+      <LoadingOverlay isLoading={isPending} text="Opening conversation..." />
       <ProfileHoverCard
         id={member.profile.id}
         name={member.profile.name}

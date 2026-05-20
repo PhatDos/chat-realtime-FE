@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { usePresence } from "@/hooks/use-presence";
 import { useApiClient } from "@/hooks/use-api-client";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { UserPlus, MessageCircle, Users } from "lucide-react";
+import { LoadingOverlay } from "../common/loading-overlay";
+import { UserMinus, MessageCircle, Users } from "lucide-react";
+
+import { unfriend } from "@/services/friends-client-service";
 
 interface Friend {
   id: string;
@@ -38,11 +43,14 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
   const [friends, setFriends] = useState<Friend[]>(initialFriends || []);
   const [loading, setLoading] = useState(!initialFriends);
   const [error, setError] = useState<string | null>(null);
+  const [removingFriendId, setRemovingFriendId] = useState<string | null>(null);
 
   const apiClient = useApiClient();
+  const router = useRouter();
+  const { toast } = useToast();
   const profileIds = friends.map((f) => f.profileId);
   const { presence } = usePresence(profileIds);
-
+  const [isPending, startTransition] = useTransition();
   useEffect(() => {
     if (initialFriends) return; // Skip if already provided
 
@@ -67,8 +75,39 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
     presence.hasOwnProperty(f.profileId) ? presence[f.profileId] : f.isOnline
   );
 
+  const handleOpenDirectMessage = (profileId: string) => {
+    startTransition(() => {
+      void router.push(`/conversations/${profileId}`);
+    });
+  };
+
+  const handleRemoveFriend = async (profileId: string, name: string) => {
+    if (removingFriendId) return;
+
+    try {
+      setRemovingFriendId(profileId);
+      await unfriend(apiClient, profileId);
+      setFriends((current) => current.filter((friend) => friend.profileId !== profileId));
+      toast({
+        title: "Friend removed",
+        description: `You are no longer friends with ${name}`,
+        variant: "success",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to remove friend";
+      toast({
+        title: "Cannot remove friend",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setRemovingFriendId(null);
+    }
+  };
+
   return (
     <div className="sticky top-20 h-fit space-y-4">
+      <LoadingOverlay isLoading={isPending} text="Opening conversation..." />
       <Card className="rounded-[1.5rem] border border-white/70 bg-white/80 shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm dark:border-white/10 dark:bg-[#1c1c20]/85">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-sm font-semibold">
@@ -152,11 +191,34 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
                     className="flex gap-1 opacity-0 transition group-hover:opacity-100"
                     onClick={(e) => e.preventDefault()}
                   >
-                    <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" title="Send message">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-full p-0"
+                      title="Send message"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void handleOpenDirectMessage(friend.profileId);
+                      }}
+                    >
                       <MessageCircle className="h-3.5 w-3.5" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" title="Add friend">
-                      <UserPlus className="h-3.5 w-3.5" />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-full p-0"
+                      title="Remove friend"
+                      disabled={removingFriendId === friend.profileId}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void handleRemoveFriend(friend.profileId, friend.name);
+                      }}
+                    >
+                      <UserMinus className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
