@@ -7,7 +7,7 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { usePresence } from "@/hooks/use-presence";
 import { useApiClient } from "@/hooks/use-api-client";
 import { Button } from "@/components/ui/button";
-import { UserPlus, MessageCircle, Mail, Users } from "lucide-react";
+import { UserPlus, MessageCircle, Users } from "lucide-react";
 
 interface Friend {
   id: string;
@@ -69,37 +69,60 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
 
   return (
     <div className="sticky top-20 h-fit space-y-4">
-      <Link href="/users">
-        <Button variant="outline" size="sm" className="w-full gap-2">
-          <Users className="h-4 w-4" />
-          Browse Users
-        </Button>
-      </Link>
-
-      <Link href="/friend-requests">
-        <Button variant="outline" size="sm" className="w-full gap-2 mt-3">
-          <Mail className="h-4 w-4" />
-          Friend Requests
-        </Button>
-      </Link>
-
-      <Card className="border-zinc-200 dark:border-zinc-700/70 bg-white/95 dark:bg-[#2b2d31]">
+      <Card className="rounded-[1.5rem] border border-white/70 bg-white/80 shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm dark:border-white/10 dark:bg-[#1c1c20]/85">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center justify-between">
-            <span>Friends ({onlineFriends.length} online)</span>
+          <CardTitle className="flex items-center justify-between text-sm font-semibold">
+            <span>People you may know</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Suggestions</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[
+            { id: "s1", name: "Sarah Anderson", imageUrl: "/avatar-default-dark.svg" },
+            { id: "s2", name: "James Taylor", imageUrl: "/avatar-default-dark.svg" },
+            { id: "s3", name: "Lisa White", imageUrl: "/avatar-default-dark.svg" },
+          ].map((suggestion) => (
+            <Link key={suggestion.id} href={`/profile/${suggestion.id}`}>
+              <div className="flex items-center gap-3 rounded-2xl p-2.5 transition hover:bg-zinc-100/80 dark:hover:bg-white/5">
+                <UserAvatar src={suggestion.imageUrl} className="h-9 w-9" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                    {suggestion.name}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">Mutual friends nearby</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 rounded-full px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-200/80 dark:text-zinc-200 dark:hover:bg-white/10"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Add
+                </Button>
+              </div>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-[1.5rem] border border-white/70 bg-white/80 shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm dark:border-white/10 dark:bg-[#1c1c20]/85">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between text-sm font-semibold">
+            <span>Friends</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">{onlineFriends.length} online</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {loading ? (
-            <p className="text-xs text-zinc-500">Loading friends...</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading friends...</p>
           ) : error ? (
             <p className="text-xs text-red-500">{error}</p>
           ) : friends.length === 0 ? (
-            <p className="text-xs text-zinc-500">No friends yet</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">No friends yet</p>
           ) : (
             friends.map((friend) => (
               <Link key={friend.id} href={`/profile/${friend.profileId}`}>
-                <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition group">
+                <div className="group flex items-center gap-3 rounded-2xl p-2.5 transition hover:bg-zinc-100/80 dark:hover:bg-white/5">
                   <div className="relative">
                     <UserAvatar
                       src={friend.imageUrl}
@@ -111,8 +134,8 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
                       }
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-zinc-900 dark:text-zinc-50 truncate">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
                       {friend.name}
                     </p>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -126,23 +149,13 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
                     </p>
                   </div>
                   <div
-                    className="flex gap-1 opacity-0 group-hover:opacity-100 transition"
+                    className="flex gap-1 opacity-0 transition group-hover:opacity-100"
                     onClick={(e) => e.preventDefault()}
                   >
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      title="Send message"
-                    >
+                    <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" title="Send message">
                       <MessageCircle className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      title="Add friend"
-                    >
+                    <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" title="Add friend">
                       <UserPlus className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -153,37 +166,12 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
         </CardContent>
       </Card>
 
-      <Card className="border-zinc-200 dark:border-zinc-700/70 bg-white/95 dark:bg-[#2b2d31]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Suggestions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {[
-            { id: "s1", name: "Sarah Anderson", imageUrl: "/avatar-default-dark.svg" },
-            { id: "s2", name: "James Taylor", imageUrl: "/avatar-default-dark.svg" },
-            { id: "s3", name: "Lisa White", imageUrl: "/avatar-default-dark.svg" },
-          ].map((suggestion) => (
-            <Link key={suggestion.id} href={`/profile/${suggestion.id}`}>
-              <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition">
-                <UserAvatar src={suggestion.imageUrl} className="h-8 w-8" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-zinc-900 dark:text-zinc-50 truncate">
-                    {suggestion.name}
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  Add
-                </Button>
-              </div>
-            </Link>
-          ))}
-        </CardContent>
-      </Card>
+      <div className="px-4 py-3 text-center">
+        <p className="text-xs leading-relaxed text-gray-400">
+          About &middot; Help &middot; Privacy &middot; Terms
+        </p>
+        <p className="mt-2 text-xs text-gray-400">&copy; 2026 NewsFeed</p>
+      </div>
     </div>
   );
 };

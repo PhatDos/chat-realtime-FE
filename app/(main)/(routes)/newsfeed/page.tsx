@@ -11,7 +11,7 @@ const NewsfeedRoutePage = async () => {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-zinc-100/70 dark:bg-[#313338]">
+    <div className="h-full overflow-y-auto">
       <NewsFeedPage
         currentUser={{
           id: profile.id,
