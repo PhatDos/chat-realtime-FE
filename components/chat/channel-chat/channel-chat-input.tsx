@@ -5,13 +5,14 @@ import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormControl, FormField, FormItem } from '../../ui/form'
-import { Plus, Send, Brain, Loader2 } from 'lucide-react'
+import { Plus, Send, Brain, Loader2, Upload } from 'lucide-react'
 import { Input } from '../../ui/input'
 import { useModal } from '@/hooks/use-modal-store'
 import { EmojiPicker } from '../../common/emoji-picker'
 import { ActionTooltip } from '../../common/action-tooltip'
 import { useSocket } from '@/components/providers/socket-provider'
 import { useAuth } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
@@ -23,6 +24,7 @@ import { chatQueryKey, insertMessage } from '@/lib/query/chat-cache'
 interface ChannelChatInputProps {
   query: { channelId: string; serverId: string }
   name: string
+  memberId: string
 }
 
 const formSchema = z.object({
@@ -31,17 +33,25 @@ const formSchema = z.object({
 
 export const ChannelChatInput = ({
   name,
-  query
+  query,
+  memberId,
 }: ChannelChatInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const { onOpen } = useModal()
   const { socket } = useSocket()
   const { userId } = useAuth()
+  const router = useRouter()
   const apiClient = useApiClient()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const queryKey = chatQueryKey(query.channelId)
   const [isAiLoading, setIsAiLoading] = useState(false)
+
+  const onNavigateToLectureUpload = () => {
+    router.push(
+      `/lectures?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}`
+    )
+  }
 
   const getAiSummaryContent = (data: unknown): string => {
     if (typeof data === 'string') return data.trim()
@@ -244,6 +254,19 @@ export const ChannelChatInput = ({
                             size={24}
                           />
                         )}
+                      </button>
+                    </ActionTooltip>
+                    <ActionTooltip label='Upload lecture' side='top'>
+                      <button
+                        type='button'
+                        onClick={onNavigateToLectureUpload}
+                        className='flex items-center justify-center'
+                        aria-label='Upload lecture'
+                      >
+                        <Upload
+                          className='text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition'
+                          size={24}
+                        />
                       </button>
                     </ActionTooltip>
                   </div>

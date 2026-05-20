@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useLectureData } from "@/hooks/lectures/use-lecture-data";
 import { SummaryGenerator } from "@/components/lectures/generators/summary-generator";
 import { FlashcardGenerator } from "@/components/lectures/generators/flashcard-generator";
@@ -17,9 +18,18 @@ import Link from "next/link";
 
 export default function LectureDetailPage() {
   const { lectureId } = useParams();
+  const searchParams = useSearchParams();
   const { lecture, loading, generating, fetchLecture, generateSummary, generateFlashcards, generateQuiz } =
     useLectureData(lectureId as string);
   const [activeTab, setActiveTab] = useState("overview");
+
+  const serverId = searchParams.get("serverId") ?? "";
+  const channelId = searchParams.get("channelId") ?? "";
+  const memberId = searchParams.get("memberId") ?? "";
+  const backHref =
+    serverId && channelId
+      ? `/lectures?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
+      : "/lectures";
 
   useEffect(() => {
     fetchLecture();
@@ -43,7 +53,7 @@ export default function LectureDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <Link href="/lectures">
+      <Link href={backHref}>
         <Button variant="ghost" size="sm">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
