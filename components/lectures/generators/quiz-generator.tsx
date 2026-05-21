@@ -23,24 +23,25 @@ export function QuizGenerator({
   };
 
   return (
-    <div className="space-y-4 p-4 border rounded-lg">
-      <h3 className="font-semibold text-lg">Generate Quiz</h3>
+    <div className="space-y-4 p-4 border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] rounded-2xl">
+      <h3 className="font-semibold text-lg text-white">Generate Quiz</h3>
       
       <div>
-        <label className="text-sm font-medium mb-2 block">Number of Questions</label>
+        <label className="text-sm font-medium mb-2 block text-slate-200">Number of Questions</label>
         <Input
           type="number"
           min="1"
           max="50"
           value={questionCount}
           onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+          className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 transition-colors"
         />
       </div>
 
       <Button
         onClick={handleGenerate}
         disabled={isGenerating}
-        className="w-full"
+        className="w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300 transition-all duration-200"
       >
         {isGenerating ? (
           <>

@@ -10,6 +10,7 @@ import { LectureFileType } from "@/types/lecture";
 import { useToast } from "@/hooks/use-toast";
 
 import { FileUpload } from "@/components/common/file-upload";
+import { LoadingOverlay } from "@/components/common/loading-overlay";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default function UploadLecturePage() {
   const [loading, setLoading] = useState(false);
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [lecturesLoading, setLecturesLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const [title, setTitle] = useState("");
 
@@ -68,6 +70,11 @@ export default function UploadLecturePage() {
     serverId && channelId
       ? `/servers/${encodeURIComponent(serverId)}/channels/${encodeURIComponent(channelId)}`
       : "/lectures";
+
+  const handleBackClick = () => {
+    setIsNavigating(true);
+    router.push(backHref);
+  };
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
@@ -130,19 +137,21 @@ export default function UploadLecturePage() {
   };
 
   return (
-    <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-      <div className="mx-auto max-w-6xl px-6 py-8 space-y-6">
+    <>
+      <LoadingOverlay isLoading={isNavigating} text="Navigating..." />
+      <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+        <div className="mx-auto max-w-6xl px-6 py-8 space-y-6">
         <div className="flex items-center justify-between gap-4">
-          <Link href={backHref}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="group border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white transition-all duration-200"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
-              Back to channel
-            </Button>
-          </Link>
+          <Button
+            onClick={handleBackClick}
+            disabled={isNavigating}
+            variant="ghost"
+            size="sm"
+            className="group border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white transition-all duration-200 disabled:opacity-50"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
+            Back to channel
+          </Button>
 
           <div className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-medium text-cyan-200 shadow-[0_0_0_1px_rgba(34,211,238,0.12)]">
             <Sparkles className="h-4 w-4" />
@@ -295,5 +304,6 @@ export default function UploadLecturePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
