@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useLectureService, type Lecture } from "@/services/lectures/lecture.service";
 import { LectureFileType } from "@/types/lecture";
 
 import { useToast } from "@/hooks/use-toast";
+import { useServerSidebarQuery } from "@/hooks/use-server-sidebar-query";
 
 import { FileUpload } from "@/components/common/file-upload";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
@@ -47,6 +47,12 @@ export default function UploadLecturePage() {
     LectureFileType.PDF
   );
 
+  const { data: serverSidebarData } = useServerSidebarQuery({
+    serverId,
+    enabled: Boolean(serverId),
+  });
+  const channelName = serverSidebarData?.server.channels.find((channel) => channel.id === channelId)?.name;
+
   useEffect(() => {
     if (!serverId || !channelId) return;
 
@@ -74,6 +80,13 @@ export default function UploadLecturePage() {
   const handleBackClick = () => {
     setIsNavigating(true);
     router.push(backHref);
+  };
+
+  const handleLectureClick = (lectureId: string) => {
+    setIsNavigating(true);
+    router.push(
+      `/lectures/${lectureId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
+    );
   };
 
   const handleSubmit = async (
@@ -117,6 +130,7 @@ export default function UploadLecturePage() {
         description: "Lecture uploaded successfully",
       });
 
+      setIsNavigating(true);
       router.push(
         `/lectures/${result.lecture.id}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
       );
@@ -234,9 +248,14 @@ export default function UploadLecturePage() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold text-white">Channel Lectures</h2>
-                  <p className="mt-1 text-sm text-slate-300">
-                    {channelId ? `Channel ${channelId}` : "No channel selected"}
-                  </p>
+                  {channelName && (
+                    <div className="mt-1 flex items-center gap-2 text-sm text-slate-300">
+                      Channel:
+                      <div className="ml-2 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100 shadow-[0_0_0_1px_rgba(34,211,238,0.10)]">
+                        {channelName}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
                   {lectures.length} total
@@ -262,11 +281,13 @@ export default function UploadLecturePage() {
               ) : (
                 <div className="grid gap-3">
                   {lectures.map((lecture, index) => (
-                    <Link
+                    <button
                       key={lecture.id}
-                      href={`/lectures/${lecture.id}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`}
-                      className="group rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-white/10 hover:shadow-lg hover:shadow-cyan-950/20"
+                      type="button"
+                      onClick={() => handleLectureClick(lecture.id)}
+                      className="group rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-white/10 hover:shadow-lg hover:shadow-cyan-950/20 disabled:opacity-50"
                       style={{ animationDelay: `${index * 40}ms` }}
+                      disabled={isNavigating}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 space-y-1">
@@ -295,7 +316,7 @@ export default function UploadLecturePage() {
                           <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                         </div>
                       </div>
-                    </Link>
+                    </button>
                   ))}
                 </div>
               )}

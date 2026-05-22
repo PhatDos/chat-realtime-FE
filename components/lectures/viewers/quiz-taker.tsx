@@ -100,7 +100,12 @@ export function QuizTaker({ quiz, onSubmit, isSubmitting }: QuizTakerProps) {
           <RadioGroup value={selectedAnswer || ""} onValueChange={handleSelectAnswer}>
             <div className="space-y-3">
               {currentQuestion.options.map((option: QuizOption) => {
-                let optionClass = 'flex items-center space-x-2 p-3 border border-white/10 rounded-lg cursor-pointer';
+                let optionClass = 'flex items-center space-x-2 p-3 border border-white/10 rounded-lg cursor-pointer transition-colors';
+
+                // add hover styles when the question hasn't been answered yet
+                if (!isAnswered) {
+                  optionClass += ' hover:bg-white/5 hover:border-white/20';
+                }
 
                 if (isAnswered) {
                   if (option.id === selectedAnswer) {

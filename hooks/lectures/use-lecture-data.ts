@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useLectureService } from "@/services/lectures/lecture.service";
-import { Lecture, Summary, Flashcard, Quiz } from "@/services/lectures/lecture.service";
+import { Lecture, Summary, Flashcard, Assessment } from "@/services/lectures/lecture.service";
 import { useToast } from "@/hooks/use-toast";
 import { SummaryTone } from "@/types/lecture";
 
@@ -110,7 +110,8 @@ export function useLectureData(lectureId: string | null) {
           if (!prev) return prev;
           return {
             ...prev,
-            quizzes: [...(prev.quizzes || []), result.quiz],
+            assessments: [...(prev.assessments || []), result.assessment || result.quiz],
+            quizzes: [...(prev.quizzes || []), result.assessment || result.quiz],
           };
         });
 
@@ -121,7 +122,7 @@ export function useLectureData(lectureId: string | null) {
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error.message || "Failed to generate quiz",
+          description: error.message || "Failed to generate assessment",
           variant: "destructive",
         });
       } finally {

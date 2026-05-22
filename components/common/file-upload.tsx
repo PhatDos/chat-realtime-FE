@@ -22,7 +22,7 @@ export const FileUpload = ({ onChange, value, endpoint }: FileUploadProps) => {
 
   if (url && !type.includes("pdf")) {
     return (
-      <div className="relative w-20 h-20">
+      <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
         <Image
           fill
           sizes="80px"
@@ -42,7 +42,7 @@ export const FileUpload = ({ onChange, value, endpoint }: FileUploadProps) => {
 
   if (url && type.includes("pdf")) {
     return (
-      <div className="relative flex flex-col items-center p-2 mt-2 rounded-md bg-background/10">
+      <div className="relative mx-auto mt-2 flex w-fit flex-col items-center rounded-md bg-background/10 p-2">
         <FileIcon className="h-10 w-10 fill-indigo-200 stroke-indigo-400" />
         <a
           href={url}
@@ -64,21 +64,25 @@ export const FileUpload = ({ onChange, value, endpoint }: FileUploadProps) => {
 
   // Upload UI
   return (
-    <UploadDropzone
-      endpoint={endpoint}
-      onClientUploadComplete={(res) => {
-        const file = res?.[0];
-        if (res && res.length > 0) {
-          if (typeof value === "string" || value === undefined) {
-            onChange(file.ufsUrl);
-          } else {
-            onChange({ url: file.ufsUrl, type: file.type });
-          }
-        }
-      }}
-      onUploadError={(err) => {
-        console.error(err);
-      }}
-    />
+    <div className="mx-auto flex w-full justify-center">
+      <div className="w-full">
+        <UploadDropzone
+          endpoint={endpoint}
+          onClientUploadComplete={(res) => {
+            const file = res?.[0];
+            if (res && res.length > 0) {
+              if (typeof value === "string" || value === undefined) {
+                onChange(file.ufsUrl);
+              } else {
+                onChange({ url: file.ufsUrl, type: file.type });
+              }
+            }
+          }}
+          onUploadError={(err) => {
+            console.error(err);
+          }}
+        />
+      </div>
+    </div>
   );
 };

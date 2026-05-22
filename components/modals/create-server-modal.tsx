@@ -95,7 +95,7 @@ export const CreateServerModal = () => {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-            <div className='spacef-y-8 px-6'>
+            <div className='space-y-8 px-6'>
               <div className='flex justify-center px-6'>
                 <FormField
                   control={form.control}
