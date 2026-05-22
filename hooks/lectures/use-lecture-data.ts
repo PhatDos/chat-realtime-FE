@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useLectureService } from "@/services/lectures/lecture.service";
-import { Lecture, Summary, Flashcard, Assessment } from "@/services/lectures/lecture.service";
+import { Lecture, Assessment } from "@/services/lectures/lecture.service";
 import { useToast } from "@/hooks/use-toast";
 import { SummaryTone } from "@/types/lecture";
 
@@ -44,7 +44,7 @@ export function useLectureData(lectureId: string | null) {
           if (!prev) return prev;
           return {
             ...prev,
-            summaries: [...(prev.summaries || []), result.summary],
+            summary: result.summary,
           };
         });
 
@@ -77,7 +77,12 @@ export function useLectureData(lectureId: string | null) {
           if (!prev) return prev;
           return {
             ...prev,
-            flashcards: [...(prev.flashcards || []), ...result.flashcards],
+            flashcardSet: result.flashcardSet ?? {
+              id: result.flashcards?.[0]?.flashcardSetId ?? "",
+              lectureId: lectureId,
+              createdAt: new Date().toISOString(),
+              flashcards: result.flashcards,
+            },
           };
         });
 
@@ -108,10 +113,10 @@ export function useLectureData(lectureId: string | null) {
         
         setLecture((prev) => {
           if (!prev) return prev;
+          const newAssessment = result.assessment || result.quiz;
           return {
             ...prev,
-            assessments: [...(prev.assessments || []), result.assessment || result.quiz],
-            quizzes: [...(prev.quizzes || []), result.assessment || result.quiz],
+            assessment: newAssessment,
           };
         });
 
@@ -119,12 +124,14 @@ export function useLectureData(lectureId: string | null) {
           title: "Success",
           description: result.message,
         });
+        return (result.assessment || result.quiz) as Assessment;
       } catch (error: any) {
         toast({
           title: "Error",
           description: error.message || "Failed to generate assessment",
           variant: "destructive",
         });
+        return null;
       } finally {
         setGenerating((prev) => ({ ...prev, quiz: false }));
       }

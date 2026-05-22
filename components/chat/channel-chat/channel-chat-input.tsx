@@ -22,11 +22,13 @@ import { getAiUnreadSummary } from '@/services/ai-service'
 
 import { OptimisticMessage } from '@/types'
 import { chatQueryKey, insertMessage } from '@/lib/query/chat-cache'
+import { MemberRole } from '@/types/api/member'
 
 interface ChannelChatInputProps {
   query: { channelId: string; serverId: string }
   name: string
   memberId: string
+  role?: MemberRole
 }
 
 const formSchema = z.object({
@@ -37,6 +39,7 @@ export const ChannelChatInput = ({
   name,
   query,
   memberId,
+  role,
 }: ChannelChatInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const { onOpen } = useModal()
@@ -56,6 +59,8 @@ export const ChannelChatInput = ({
       void router.push(url)
     })
   }
+
+  const canUploadLecture = role === MemberRole.SERVEROWNER || role === MemberRole.VICESERVEROWNER
 
   const getAiSummaryContent = (data: unknown): string => {
     if (typeof data === 'string') return data.trim()
@@ -259,19 +264,21 @@ export const ChannelChatInput = ({
                         )}
                       </button>
                     </ActionTooltip>
-                    <ActionTooltip label='Upload lecture' side='top'>
-                      <button
-                        type='button'
-                        onClick={onNavigateToLectureUpload}
-                        className='flex items-center justify-center'
-                        aria-label='Upload lecture'
-                      >
-                        <Upload
-                          className='text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition'
-                          size={24}
-                        />
-                      </button>
-                    </ActionTooltip>
+                    {canUploadLecture && (
+                      <ActionTooltip label='Upload lecture' side='top'>
+                        <button
+                          type='button'
+                          onClick={onNavigateToLectureUpload}
+                          className='flex items-center justify-center'
+                          aria-label='Upload lecture'
+                        >
+                          <Upload
+                            className='text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition'
+                            size={24}
+                          />
+                        </button>
+                      </ActionTooltip>
+                    )}
                   </div>
                 </div>
               </FormControl>

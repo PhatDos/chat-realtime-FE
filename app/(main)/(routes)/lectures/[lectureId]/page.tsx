@@ -27,6 +27,9 @@ export default function LectureDetailPage() {
   const lectureService = useLectureService();
   const { lecture, loading, generating, fetchLecture, generateSummary, generateFlashcards, generateQuiz } =
     useLectureData(lectureId as string);
+  const hasSummary = Boolean(lecture?.summary);
+  const hasFlashcards = Boolean(lecture?.flashcardSet?.flashcards?.length);
+  const hasQuiz = Boolean(lecture?.assessment);
   const [activeTab, setActiveTab] = useState("overview");
   const [submittingAssessmentId, setSubmittingAssessmentId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -43,7 +46,7 @@ export default function LectureDetailPage() {
       ? `/lectures?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
       : "/lectures";
   const channelName = serverSidebarData?.server.channels.find((channel) => channel.id === channelId)?.name;
-  const assessments = ((lecture?.assessments || lecture?.quizzes || []) as Assessment[]);
+  const assessments = lecture?.assessment ? [lecture.assessment as Assessment] : [];
 
   useEffect(() => {
     fetchLecture();
@@ -59,6 +62,14 @@ export default function LectureDetailPage() {
     router.push(
       `/lectures/${lectureId as string}/assessment-editor?assessmentId=${assessmentId}&serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
     );
+  };
+
+  const handleGenerateQuiz = async (questionCount: number) => {
+    const generatedAssessment = await generateQuiz(questionCount);
+
+    if (generatedAssessment?.id) {
+      handleEditAssessmentClick(generatedAssessment.id);
+    }
   };
 
   if (loading) {
@@ -136,26 +147,26 @@ export default function LectureDetailPage() {
                 <TabsList className="grid w-full grid-cols-4 bg-transparent gap-0">
                   <TabsTrigger
                     value="overview"
-                    className="group relative isolate overflow-hidden rounded-none px-4 py-3 text-slate-300 transition-all duration-300 ease-out hover:bg-white/5 hover:text-white data-[state=active]:text-cyan-200 data-[state=active]:shadow-[inset_0_-1px_0_rgba(34,211,238,0.35)] before:absolute before:inset-x-4 before:bottom-0 before:h-0.5 before:rounded-full before:bg-gradient-to-r before:from-transparent before:via-cyan-300 before:to-transparent before:opacity-0 before:scale-x-0 before:origin-center before:transition-all before:duration-300 before:ease-out hover:before:opacity-100 hover:before:scale-x-100 data-[state=active]:before:opacity-100 data-[state=active]:before:scale-x-100"
+                    className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
                   >
                     <BookOpen className="mr-2 h-4 w-4" />
                     Overview
                   </TabsTrigger>
                   <TabsTrigger
                     value="summary"
-                    className="group relative isolate overflow-hidden rounded-none px-4 py-3 text-slate-300 transition-all duration-300 ease-out hover:bg-white/5 hover:text-white data-[state=active]:text-cyan-200 data-[state=active]:shadow-[inset_0_-1px_0_rgba(34,211,238,0.35)] before:absolute before:inset-x-4 before:bottom-0 before:h-0.5 before:rounded-full before:bg-gradient-to-r before:from-transparent before:via-cyan-300 before:to-transparent before:opacity-0 before:scale-x-0 before:origin-center before:transition-all before:duration-300 before:ease-out hover:before:opacity-100 hover:before:scale-x-100 data-[state=active]:before:opacity-100 data-[state=active]:before:scale-x-100"
+                    className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
                   >
                     Summary
                   </TabsTrigger>
                   <TabsTrigger
                     value="flashcards"
-                    className="group relative isolate overflow-hidden rounded-none px-4 py-3 text-slate-300 transition-all duration-300 ease-out hover:bg-white/5 hover:text-white data-[state=active]:text-cyan-200 data-[state=active]:shadow-[inset_0_-1px_0_rgba(34,211,238,0.35)] before:absolute before:inset-x-4 before:bottom-0 before:h-0.5 before:rounded-full before:bg-gradient-to-r before:from-transparent before:via-cyan-300 before:to-transparent before:opacity-0 before:scale-x-0 before:origin-center before:transition-all before:duration-300 before:ease-out hover:before:opacity-100 hover:before:scale-x-100 data-[state=active]:before:opacity-100 data-[state=active]:before:scale-x-100"
+                    className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
                   >
                     Flashcards
                   </TabsTrigger>
                   <TabsTrigger
                     value="quiz"
-                    className="group relative isolate overflow-hidden rounded-none px-4 py-3 text-slate-300 transition-all duration-300 ease-out hover:bg-white/5 hover:text-white data-[state=active]:text-cyan-200 data-[state=active]:shadow-[inset_0_-1px_0_rgba(34,211,238,0.35)] before:absolute before:inset-x-4 before:bottom-0 before:h-0.5 before:rounded-full before:bg-gradient-to-r before:from-transparent before:via-cyan-300 before:to-transparent before:opacity-0 before:scale-x-0 before:origin-center before:transition-all before:duration-300 before:ease-out hover:before:opacity-100 hover:before:scale-x-100 data-[state=active]:before:opacity-100 data-[state=active]:before:scale-x-100"
+                    className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
                   >
                     Quiz
                   </TabsTrigger>
@@ -171,28 +182,27 @@ export default function LectureDetailPage() {
                         lectureId={lecture.id}
                         onGenerate={generateSummary}
                         isGenerating={generating.summary || false}
+                        alreadyGenerated={hasSummary}
                       />
                       <FlashcardGenerator
                         lectureId={lecture.id}
                         onGenerate={generateFlashcards}
                         isGenerating={generating.flashcards || false}
+                        alreadyGenerated={hasFlashcards}
                       />
                       <QuizGenerator
                         lectureId={lecture.id}
-                        onGenerate={generateQuiz}
+                        onGenerate={handleGenerateQuiz}
                         isGenerating={generating.quiz || false}
+                        alreadyGenerated={hasQuiz}
                       />
                     </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="summary" className="space-y-4 mt-0">
-                  {lecture.summaries && lecture.summaries.length > 0 ? (
-                    <div className="space-y-4">
-                      {lecture.summaries.map((summary) => (
-                        <SummaryViewer key={summary.id} summary={summary} />
-                      ))}
-                    </div>
+                  {lecture.summary ? (
+                    <SummaryViewer summary={lecture.summary} />
                   ) : (
                     <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
                       <p className="text-slate-300">No summaries generated yet. Generate one from Overview tab.</p>
@@ -201,8 +211,8 @@ export default function LectureDetailPage() {
                 </TabsContent>
 
                 <TabsContent value="flashcards" className="space-y-4 mt-0">
-                  {lecture.flashcards && lecture.flashcards.length > 0 ? (
-                    <FlashcardViewer flashcards={lecture.flashcards} />
+                  {lecture.flashcardSet?.flashcards && lecture.flashcardSet.flashcards.length > 0 ? (
+                    <FlashcardViewer flashcards={lecture.flashcardSet.flashcards} />
                   ) : (
                     <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
                       <p className="text-slate-300">No flashcards generated yet. Generate some from Overview tab.</p>
@@ -259,7 +269,12 @@ export default function LectureDetailPage() {
                           <QuizTaker
                             quiz={assessment as Quiz}
                             onSubmit={async (answers) => {
-                              await lectureService.submitAssessmentAttempt(assessment.id, memberId, answers);
+                              return await lectureService.submitAssessmentAttempt(assessment.id, memberId, answers);
+                            }}
+                            onSubmitted={(response) => {
+                              router.push(
+                                `/lectures/${lectureId as string}/assessment-attempts/${response.attempt.id}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
+                              );
                             }}
                             isSubmitting={false}
                           />

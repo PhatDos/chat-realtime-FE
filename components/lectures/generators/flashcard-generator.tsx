@@ -9,12 +9,14 @@ interface FlashcardGeneratorProps {
   lectureId: string;
   onGenerate: (count: number) => Promise<void>;
   isGenerating: boolean;
+  alreadyGenerated?: boolean;
 }
 
 export function FlashcardGenerator({
   lectureId,
   onGenerate,
   isGenerating,
+  alreadyGenerated = false,
 }: FlashcardGeneratorProps) {
   const [count, setCount] = useState(10);
 
@@ -35,12 +37,13 @@ export function FlashcardGenerator({
           value={count}
           onChange={(e) => setCount(parseInt(e.target.value))}
           className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 transition-colors"
+          disabled={isGenerating || alreadyGenerated}
         />
       </div>
 
       <Button
         onClick={handleGenerate}
-        disabled={isGenerating}
+        disabled={isGenerating || alreadyGenerated}
         className="w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300 transition-all duration-200"
       >
         {isGenerating ? (

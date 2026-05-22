@@ -51,6 +51,7 @@ const ChannelIdPage = async ({ params }: ChannelIdPageProps) => {
           <ChannelChatInput
             name={channel.name}
             memberId={member.id}
+            role={member.role}
             query={{
               channelId: channel.id,
               serverId: channel.serverId,

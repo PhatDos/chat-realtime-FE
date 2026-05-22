@@ -42,7 +42,7 @@ export default function AssessmentEditorPage() {
     );
   }
 
-  const assessment = (lecture?.assessments || lecture?.quizzes || []).find((a) => a.id === assessmentId);
+  const assessment = lecture?.assessment?.id === assessmentId ? lecture.assessment : null;
 
   if (!lecture || !assessment) {
     return (

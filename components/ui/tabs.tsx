@@ -27,7 +27,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+      "group relative isolate overflow-hidden inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm before:absolute before:inset-x-3 before:bottom-0 before:h-0.5 before:rounded-full before:bg-gradient-to-r before:from-transparent before:via-cyan-300 before:to-transparent before:opacity-0 before:scale-x-0 before:origin-center before:transition-all before:duration-300 before:ease-out hover:before:opacity-100 hover:before:scale-x-100 data-[state=active]:before:opacity-100 data-[state=active]:before:scale-x-100",
       className
     )}
     {...props}

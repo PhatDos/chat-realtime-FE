@@ -14,10 +14,9 @@ export interface Lecture {
   member?: MemberWithProfileResponse;
   createdAt: string;
   updatedAt: string;
-  summaries?: Summary[];
-  flashcards?: Flashcard[];
-  assessments?: Assessment[];
-  quizzes?: Assessment[];
+  summary?: Summary | null;
+  flashcardSet?: FlashcardSet | null;
+  assessment?: Assessment | null;
 }
 
 export interface Summary {
@@ -30,10 +29,18 @@ export interface Summary {
 
 export interface Flashcard {
   id: string;
-  lectureId: string;
+  flashcardSetId: string;
+  order: number;
   frontText: string;
   backText: string;
   createdAt: string;
+}
+
+export interface FlashcardSet {
+  id: string;
+  lectureId: string;
+  createdAt: string;
+  flashcards?: Flashcard[];
 }
 
 export interface Assessment {
@@ -91,6 +98,7 @@ export interface AssessmentAnswer {
   finalPoints?: number | null;
   teacherFeedback?: string | null;
   gradedAt?: string | null;
+  questionSnapshot?: unknown;
 }
 
 export type Quiz = Assessment;
@@ -114,6 +122,19 @@ export interface AssessmentAttempt {
   gradedById?: string | null;
   createdAt: string;
   answers?: AssessmentAnswer[];
+  assessment?: Assessment;
+  member?: MemberWithProfileResponse;
+  gradedBy?: MemberWithProfileResponse | null;
+}
+
+export interface SubmitAssessmentAttemptResponse {
+  success: boolean;
+  attempt: AssessmentAttempt;
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  totalPoints?: number;
+  finalScore?: number;
 }
 
 export interface CreateLecturePayload {
@@ -188,6 +209,7 @@ export function useLectureService() {
           success: boolean;
           count: number;
           flashcards: Flashcard[];
+          flashcardSet?: FlashcardSet | null;
           message: string;
         }>(`/lectures/${lectureId}/generate/flashcards`, payload);
       },
@@ -202,6 +224,10 @@ export function useLectureService() {
           quiz: Assessment;
           message: string;
         }>(`/lectures/${lectureId}/generate/assessment`, payload);
+      },
+
+      getAssessmentAttempt: async (attemptId: string) => {
+        return apiClient.get<AssessmentAttempt>(`/lectures/assessment/attempts/${attemptId}`);
       },
 
       /**
@@ -229,31 +255,15 @@ export function useLectureService() {
         assessmentId: string,
         memberId: string,
         answers: Record<string, string>
-      ) => {
-        return apiClient.post<{
-          success: boolean;
-          attempt: AssessmentAttempt;
-          score: number;
-          correctCount: number;
-          totalQuestions: number;
-          totalPoints?: number;
-          finalScore?: number;
-        }>(`/lectures/assessment/${assessmentId}/attempt`, {
+      ): Promise<SubmitAssessmentAttemptResponse> => {
+        return apiClient.post<SubmitAssessmentAttemptResponse>(`/lectures/assessment/${assessmentId}/attempt`, {
           memberId,
           answers,
         });
       },
 
       submitQuizAttempt: async (quizId: string, memberId: string, answers: Record<string, string>) => {
-        return apiClient.post<{
-          success: boolean;
-          attempt: AssessmentAttempt;
-          score: number;
-          correctCount: number;
-          totalQuestions: number;
-          totalPoints?: number;
-          finalScore?: number;
-        }>(`/lectures/quiz/${quizId}/attempt`, {
+        return apiClient.post<SubmitAssessmentAttemptResponse>(`/lectures/quiz/${quizId}/attempt`, {
           memberId,
           answers,
         });

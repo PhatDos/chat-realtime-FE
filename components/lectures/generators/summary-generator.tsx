@@ -16,12 +16,14 @@ interface SummaryGeneratorProps {
   lectureId: string;
   onGenerate: (tone: SummaryTone) => Promise<void>;
   isGenerating: boolean;
+  alreadyGenerated?: boolean;
 }
 
 export function SummaryGenerator({
   lectureId,
   onGenerate,
   isGenerating,
+  alreadyGenerated = false,
 }: SummaryGeneratorProps) {
   const [tone, setTone] = useState<SummaryTone>(SummaryTone.CONCISE);
 
@@ -36,7 +38,7 @@ export function SummaryGenerator({
       <div>
         <label className="text-sm font-medium mb-2 block text-slate-200">Tone</label>
         <Select value={tone} onValueChange={(value) => setTone(value as SummaryTone)}>
-          <SelectTrigger className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 transition-colors">
+          <SelectTrigger className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 transition-colors" disabled={isGenerating || alreadyGenerated}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="z-[9999] border-white/10 bg-slate-900 shadow-2xl shadow-black/50">
@@ -50,7 +52,7 @@ export function SummaryGenerator({
 
       <Button
         onClick={handleGenerate}
-        disabled={isGenerating}
+        disabled={isGenerating || alreadyGenerated}
         className="w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300 transition-all duration-200"
       >
         {isGenerating ? (
