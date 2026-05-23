@@ -13,13 +13,10 @@ import { NotificationPopoverContent } from "./notification-popover-content";
 import { useApiClient } from "@/hooks/use-api-client";
 import { useQuery } from "@tanstack/react-query";
 import { getIncomingFriendRequestsEnvelope } from "@/services/friends-client-service";
-import { useFriendRequestsEvents } from "@/hooks/use-friend-requests-events";
 
 export const NotificationBell = () => {
 	const [open, setOpen] = useState(false);
 	const api = useApiClient();
-
-	useFriendRequestsEvents();
 
 	const { data: incomingEnvelope } = useQuery(
 		["friend-requests", "incoming", "envelope"],

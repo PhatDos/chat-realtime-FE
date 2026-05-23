@@ -43,10 +43,10 @@ interface ProfilePageProps {
 }
 
 export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileId }: ProfilePageProps) => {
+  const [isAdding, setIsAdding] = useState(false);
   const [isFriend, setIsFriend] = useState(profile.isFriend);
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
   const [pendingRequestDirection, setPendingRequestDirection] = useState<"sent" | "received" | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
   const [posts, setPosts] = useState<FeedPost[]>(profile.posts);
   const api = useApiClient();
   const queryClient = useQueryClient();
@@ -94,6 +94,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setPendingRequestId(request.id ?? null);
       setPendingRequestDirection("sent");
       setIsFriend(false);
+
       await refetchNotificationContent();
 
       toast({
@@ -125,6 +126,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       await cancelFriendRequest(api, pendingRequestId);
       setPendingRequestId(null);
       setPendingRequestDirection(null);
+
       await refetchNotificationContent();
 
       toast({
@@ -157,6 +159,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setIsFriend(false);
       setPendingRequestId(null);
       setPendingRequestDirection(null);
+
       await refetchNotificationContent();
 
       toast({
@@ -259,6 +262,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       setPendingRequestId(null);
       setPendingRequestDirection(null);
       setIsFriend(true);
+
       await refetchNotificationContent();
 
       toast({
@@ -290,6 +294,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
       await rejectFriendRequest(api, pendingRequestId);
       setPendingRequestId(null);
       setPendingRequestDirection(null);
+
       await refetchNotificationContent();
 
       toast({

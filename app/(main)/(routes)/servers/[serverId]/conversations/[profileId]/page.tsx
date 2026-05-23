@@ -29,6 +29,8 @@ const ProfileIdPage = async ({ params, searchParams }: ProfileIdPageProps) => {
       <ChatHeader
         imageUrl={otherProfile.imageUrl}
         name={otherProfile.name}
+        otherProfileId={otherProfile.id}
+        currentProfileId={profile.id}
         serverId={serverId}
         type="conversation"
       />

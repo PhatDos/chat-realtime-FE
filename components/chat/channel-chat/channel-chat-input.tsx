@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormControl, FormField, FormItem } from '../../ui/form'
-import { Plus, Send, Brain, Loader2, Upload } from 'lucide-react'
+import { Plus, Send, Brain, Loader2, Upload, BookOpen } from 'lucide-react'
 import { Input } from '../../ui/input'
 import { useModal } from '@/hooks/use-modal-store'
 import { EmojiPicker } from '../../common/emoji-picker'
@@ -19,6 +19,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
 import { getAiUnreadSummary } from '@/services/ai-service'
+import { useLectureService } from '@/services/lectures/lecture.service'
 
 import { OptimisticMessage } from '@/types'
 import { chatQueryKey, insertMessage } from '@/lib/query/chat-cache'
@@ -47,10 +48,12 @@ export const ChannelChatInput = ({
   const { userId } = useAuth()
   const router = useRouter()
   const apiClient = useApiClient()
+  const lectureService = useLectureService()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const queryKey = chatQueryKey(query.channelId)
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [isLectureShortcutLoading, setIsLectureShortcutLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const onNavigateToLectureUpload = () => {
@@ -61,6 +64,40 @@ export const ChannelChatInput = ({
   }
 
   const canUploadLecture = role === MemberRole.SERVEROWNER || role === MemberRole.VICESERVEROWNER
+
+  const openLectureHub = async () => {
+    if (isLectureShortcutLoading) return
+
+    setIsLectureShortcutLoading(true)
+
+    try {
+      const lectures = await lectureService.getLecturesByChannel(query.serverId, query.channelId)
+      const latestLecture = lectures[0]
+
+      if (!latestLecture) {
+        toast({
+          title: 'No lectures yet',
+          description: 'Upload a lecture first to open lecture materials.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const url = `/lectures/${latestLecture.id}?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
+
+      startTransition(() => {
+        void router.push(url)
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to open lecture',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLectureShortcutLoading(false)
+    }
+  }
 
   const getAiSummaryContent = (data: unknown): string => {
     if (typeof data === 'string') return data.trim()
@@ -264,7 +301,7 @@ export const ChannelChatInput = ({
                         )}
                       </button>
                     </ActionTooltip>
-                    {canUploadLecture && (
+                    {canUploadLecture ? (
                       <ActionTooltip label='Upload lecture' side='top'>
                         <button
                           type='button'
@@ -278,6 +315,22 @@ export const ChannelChatInput = ({
                           />
                         </button>
                       </ActionTooltip>
+                    ) : (
+                      <ActionTooltip label='Lecture materials' side='top'>
+                        <button
+                          type='button'
+                          onClick={() => void openLectureHub()}
+                          disabled={isLectureShortcutLoading}
+                          className='flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-60'
+                          aria-label='Lecture materials'
+                        >
+                          {isLectureShortcutLoading ? (
+                            <Loader2 className='text-zinc-500 dark:text-zinc-400 animate-spin' size={24} />
+                          ) : (
+                            <BookOpen className='text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition' size={24} />
+                          )}
+                        </button>
+                      </ActionTooltip>
                     )}
                   </div>
                 </div>
@@ -289,3 +342,4 @@ export const ChannelChatInput = ({
     </Form>
   )
 }
+

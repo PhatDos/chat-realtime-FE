@@ -5,6 +5,7 @@ import { io as ClientIO, Socket } from "socket.io-client";
 import { useAuth } from "@clerk/nextjs";
 import { useApiClient } from "@/hooks/use-api-client";
 import { getCurrentProfile } from "@/services/servers/servers-service";
+import { useFriendRequestsEvents } from "@/hooks/use-friend-requests-events";
 
 type SocketContextType = {
   socket: Socket | null;
@@ -24,6 +25,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [profileId, setProfileId] = useState<string | null>(null);
   const { userId } = useAuth();
   const apiClient = useApiClient();
+
+  useFriendRequestsEvents();
 
   useEffect(() => {
     if (!userId) {

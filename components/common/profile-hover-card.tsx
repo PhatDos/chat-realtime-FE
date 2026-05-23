@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { MouseEvent, useState } from 'react'
 import { AxiosError } from 'axios'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
@@ -78,6 +78,11 @@ export const ProfileHoverCard = ({
   const isOnline = presence[id] ?? false
   const showPresenceBadge = !isSelf && isOnline
   const badgePositionClassName = badgeClassName ?? 'bottom-0 right-0'
+
+  const stopActionEvent = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+  }
 
   const glareAvatarNode = (
     <div className='relative inline-block overflow-visible'>
@@ -351,7 +356,7 @@ export const ProfileHoverCard = ({
             <div className='flex-1'>
               <div className='font-bold text-sm bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent'>{name}</div>
               <div className='text-xs text-zinc-500 dark:text-zinc-400 mt-0.5'>
-                {isOnline ? '🟢 Active' : '⚫ Offline'}
+                {isOnline ? '🟢 Active' : 'Offline'}
               </div>
             </div>
           </div>
@@ -360,7 +365,10 @@ export const ProfileHoverCard = ({
               <div className='flex justify-end gap-2'>
                 <button
                   type='button'
-                  onClick={onAcceptRequest}
+                  onClick={(event) => {
+                    stopActionEvent(event)
+                    void onAcceptRequest()
+                  }}
                   disabled={isAdding || isChecking}
                   className='px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100'
                 >
@@ -368,7 +376,10 @@ export const ProfileHoverCard = ({
                 </button>
                 <button
                   type='button'
-                  onClick={onRejectRequest}
+                  onClick={(event) => {
+                    stopActionEvent(event)
+                    void onRejectRequest()
+                  }}
                   disabled={isAdding || isChecking}
                   className='px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-gradient-to-r from-zinc-500 to-zinc-700 hover:from-zinc-600 hover:to-zinc-800 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100'
                 >
@@ -378,7 +389,20 @@ export const ProfileHoverCard = ({
             ) : (
               <button
                 type='button'
-                onClick={isFriend ? onRemoveFriend : pendingRequest ? onCancelRequest : onAddFriend}
+                onClick={(event) => {
+                  stopActionEvent(event)
+                  if (isFriend) {
+                    void onRemoveFriend()
+                    return
+                  }
+
+                  if (pendingRequest) {
+                    void onCancelRequest()
+                    return
+                  }
+
+                  void onAddFriend()
+                }}
                 disabled={isAdding || isChecking}
                 className={`px-4 py-1.5 rounded-lg text-white text-xs font-medium shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 ${
                   isFriend 
@@ -391,11 +415,7 @@ export const ProfileHoverCard = ({
                 {isChecking
                   ? 'Checking...'
                   : isAdding
-                    ? isFriend
-                      ? 'Removing...'
-                      : pendingRequest
-                        ? 'Canceling...'
-                        : 'Sending...'
+                    ? 'Loading...'
                     : isFriend
                       ? 'Remove friend'
                       : pendingRequest

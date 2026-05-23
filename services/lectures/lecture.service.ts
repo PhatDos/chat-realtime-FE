@@ -19,6 +19,15 @@ export interface Lecture {
   assessment?: Assessment | null;
 }
 
+export interface LectureFileRow {
+  id: string;
+  title: string;
+  fileUrl: string;
+  fileType: LectureFileType;
+  createdAt: string;
+  uploadedBy: string;
+}
+
 export interface Summary {
   id: string;
   lectureId: string;
@@ -183,6 +192,10 @@ export function useLectureService() {
         return apiClient.get<Lecture>(`/lectures/${lectureId}`);
       },
 
+      getLectureFiles: async (lectureId: string) => {
+        return apiClient.get<LectureFileRow[]>(`/lectures/${lectureId}/files`);
+      },
+
       /**
        * Get all lectures for a channel
        */
@@ -289,7 +302,14 @@ export function useLectureService() {
 
       updateAssessmentQuestion: async (
         questionId: string,
-        payload: Partial<Pick<AssessmentQuestion, 'questionText' | 'type' | 'points' | 'explanation' | 'order'>>
+        payload: Partial<Pick<AssessmentQuestion, 'questionText' | 'type' | 'points' | 'explanation' | 'order'>> & {
+          options?: Array<{
+            id: string;
+            optionText?: string;
+            isCorrect?: boolean;
+            order?: number;
+          }>;
+        }
       ) => {
         return apiClient.patch<AssessmentQuestion>(`/lectures/assessment/questions/${questionId}`, payload);
       },

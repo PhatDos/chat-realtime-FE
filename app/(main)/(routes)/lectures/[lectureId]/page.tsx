@@ -1,56 +1,127 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import { isAxiosError } from "axios";
 import { useLectureData } from "@/hooks/lectures/use-lecture-data";
-import { useLectureService } from "@/services/lectures/lecture.service";
-import type { Assessment, Quiz } from "@/services/lectures/lecture.service";
-import { SummaryGenerator } from "@/components/lectures/generators/summary-generator";
-import { FlashcardGenerator } from "@/components/lectures/generators/flashcard-generator";
-import { QuizGenerator } from "@/components/lectures/generators/quiz-generator";
+import { useLectureService, type LectureFileRow } from "@/services/lectures/lecture.service";
+import type {
+  Assessment,
+  AssessmentAttempt,
+  Quiz,
+  SubmitAssessmentAttemptResponse,
+} from "@/services/lectures/lecture.service";
 import { AssessmentEditor } from "@/components/lectures/viewers/assessment-editor";
 import { SummaryViewer } from "@/components/lectures/viewers/summary-viewer";
 import { FlashcardViewer } from "@/components/lectures/viewers/flashcard-viewer";
 import { QuizTaker } from "@/components/lectures/viewers/quiz-taker";
+import { LectureOverviewSection } from "@/components/lectures/viewers/lecture-overview-section";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Sparkles, BookOpen, CalendarDays, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useServerSidebarQuery } from "@/hooks/use-server-sidebar-query";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LectureDetailPage() {
   const { lectureId } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const lectureService = useLectureService();
+  const { toast } = useToast();
   const { lecture, loading, generating, fetchLecture, generateSummary, generateFlashcards, generateQuiz } =
     useLectureData(lectureId as string);
+  const [lectureFiles, setLectureFiles] = useState<LectureFileRow[]>([]);
+  const [loadingLectureFiles, setLoadingLectureFiles] = useState(false);
   const hasSummary = Boolean(lecture?.summary);
   const hasFlashcards = Boolean(lecture?.flashcardSet?.flashcards?.length);
   const hasQuiz = Boolean(lecture?.assessment);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [submittingAssessmentId, setSubmittingAssessmentId] = useState<string | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   const serverId = searchParams.get("serverId") ?? "";
   const channelId = searchParams.get("channelId") ?? "";
   const memberId = searchParams.get("memberId") ?? "";
+  const viewMode = searchParams.get("view") ?? "";
+  const isOwner = lecture?.memberId === memberId;
+  const isStudentView = viewMode === "student" && !isOwner;
+  const availableTabs = isOwner ? ["overview", "summary", "flashcards", "edit-quiz"] : ["overview", "summary", "flashcards", "quiz"];
+  const defaultTab = viewMode === "student" && !isOwner ? "quiz" : searchParams.get("tab") ?? "overview";
+  const [activeTab, setActiveTab] = useState(availableTabs.includes(defaultTab) ? defaultTab : availableTabs[0]);
+  const [submittingAssessmentId, setSubmittingAssessmentId] = useState<string | null>(null);
+  const [isSubmittingAssessmentAttempt, setIsSubmittingAssessmentAttempt] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const { data: serverSidebarData } = useServerSidebarQuery({
     serverId,
     enabled: Boolean(serverId),
   });
   const backHref =
     serverId && channelId
-      ? `/lectures?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
+      ? `/lectures?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}${isStudentView ? "&view=student" : ""}`
       : "/lectures";
   const channelName = serverSidebarData?.server.channels.find((channel) => channel.id === channelId)?.name;
   const assessments = lecture?.assessment ? [lecture.assessment as Assessment] : [];
+  const currentAssessment = assessments[0] ?? null;
+  const currentAttempt = useMemo(() => {
+    if (!currentAssessment || !memberId) {
+      return null;
+    }
+
+    return (
+      currentAssessment.attempts?.find(
+        (attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)
+      ) ?? null
+    );
+  }, [currentAssessment, memberId]);
+
+  const getAttemptHref = (attemptId: string) =>
+    `/lectures/${lectureId as string}/assessment-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
+
+  const getLectureHref = (tab: string) =>
+    `/lectures/${lectureId as string}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&tab=${encodeURIComponent(tab)}`;
+
+  const buildSubmitResponse = (attempt: AssessmentAttempt): SubmitAssessmentAttemptResponse => {
+    const totalQuestions = attempt.assessment?.totalQuestions ?? attempt.answers?.length ?? 0;
+    const correctCount = attempt.answers?.reduce(
+      (count, answer) => count + (answer.isCorrect ? 1 : 0),
+      0
+    );
+    const finalScore = attempt.finalScore;
+    const score = totalQuestions > 0 ? (finalScore / totalQuestions) * 100 : 0;
+
+    return {
+      success: true,
+      attempt,
+      score,
+      correctCount: correctCount ?? 0,
+      totalQuestions,
+      totalPoints: attempt.assessment?.totalPoints,
+      finalScore,
+    };
+  };
 
   useEffect(() => {
     fetchLecture();
-  }, [lectureId]);
+  }, [fetchLecture, lectureId]);
+
+  useEffect(() => {
+    if (!lectureId) return;
+
+    const loadLectureFiles = async () => {
+      setLoadingLectureFiles(true);
+
+      try {
+        const data = await lectureService.getLectureFiles(lectureId as string);
+        setLectureFiles(data);
+      } catch (error) {
+        console.error("Failed to load lecture files", error);
+      } finally {
+        setLoadingLectureFiles(false);
+      }
+    };
+
+    void loadLectureFiles();
+  }, [lectureId, lectureService]);
 
   const handleBackClick = () => {
     setIsNavigating(true);
@@ -136,6 +207,14 @@ export default function LectureDetailPage() {
                 {lecture.member?.profile?.name ?? "Unknown"}
               </span>
             )}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
+              {isOwner ? "Owner / teacher view" : "Student / member view"}
+            </span>
+            {viewMode === "student" && !isOwner && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200">
+                View-only mode
+              </span>
+            )}
           </div>
         </div>
 
@@ -165,39 +244,29 @@ export default function LectureDetailPage() {
                     Flashcards
                   </TabsTrigger>
                   <TabsTrigger
-                    value="quiz"
+                    value={isOwner ? "edit-quiz" : "quiz"}
                     className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
                   >
-                    Quiz
+                    {isOwner ? "Edit Quiz" : "Quiz"}
                   </TabsTrigger>
                 </TabsList>
               </div>
 
               <div className="px-6 py-6">
                 <TabsContent value="overview" className="space-y-6 mt-0">
-                  <div>
-                    <h2 className="text-xl font-semibold text-white mb-4">Generate Learning Materials</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <SummaryGenerator
-                        lectureId={lecture.id}
-                        onGenerate={generateSummary}
-                        isGenerating={generating.summary || false}
-                        alreadyGenerated={hasSummary}
-                      />
-                      <FlashcardGenerator
-                        lectureId={lecture.id}
-                        onGenerate={generateFlashcards}
-                        isGenerating={generating.flashcards || false}
-                        alreadyGenerated={hasFlashcards}
-                      />
-                      <QuizGenerator
-                        lectureId={lecture.id}
-                        onGenerate={handleGenerateQuiz}
-                        isGenerating={generating.quiz || false}
-                        alreadyGenerated={hasQuiz}
-                      />
-                    </div>
-                  </div>
+                  <LectureOverviewSection
+                    lecture={lecture}
+                    lectureFiles={lectureFiles}
+                    loadingLectureFiles={loadingLectureFiles}
+                    isOwner={isOwner}
+                    hasSummary={hasSummary}
+                    hasFlashcards={hasFlashcards}
+                    hasQuiz={hasQuiz}
+                    generating={generating}
+                    onGenerateSummary={generateSummary}
+                    onGenerateFlashcards={generateFlashcards}
+                    onGenerateQuiz={handleGenerateQuiz}
+                  />
                 </TabsContent>
 
                 <TabsContent value="summary" className="space-y-4 mt-0">
@@ -220,42 +289,42 @@ export default function LectureDetailPage() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="quiz" className="space-y-4 mt-0">
-                  {assessments.length > 0 ? (
-                    <div className="space-y-4">
-                      {assessments.map((assessment) => (
-                        <div
-                          key={assessment.id}
-                          className="rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] p-6 transition-all duration-200 hover:border-cyan-400/30 hover:shadow-lg hover:shadow-cyan-950/20"
-                        >
-                          <div className="flex items-start justify-between gap-3 mb-4">
-                            <div>
-                              <h3 className="text-xl font-semibold text-white">{assessment.title}</h3>
-                              <p className="text-sm text-slate-400">
-                                {assessment.type} · {assessment.status} · {assessment.totalQuestions} questions
-                              </p>
+                {isOwner ? (
+                  <TabsContent value="edit-quiz" className="space-y-4 mt-0">
+                    {assessments.length > 0 ? (
+                      <div className="space-y-4">
+                        {assessments.map((assessment) => (
+                          <div
+                            key={assessment.id}
+                            className="rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] p-6 transition-all duration-200 hover:border-cyan-400/30 hover:shadow-lg hover:shadow-cyan-950/20"
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-4">
+                              <div>
+                                <h3 className="text-xl font-semibold text-white">{assessment.title}</h3>
+                                <p className="text-sm text-slate-400">
+                                  {assessment.type} · {assessment.status} · {assessment.totalQuestions} questions
+                                </p>
+                              </div>
+                              {assessment.status === "DRAFT" && (
+                                <Button
+                                  size="sm"
+                                  className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+                                  onClick={async () => {
+                                    setSubmittingAssessmentId(assessment.id);
+                                    try {
+                                      await lectureService.publishAssessment(assessment.id);
+                                      await fetchLecture();
+                                    } finally {
+                                      setSubmittingAssessmentId(null);
+                                    }
+                                  }}
+                                  disabled={submittingAssessmentId === assessment.id}
+                                >
+                                  {submittingAssessmentId === assessment.id ? "Publishing..." : "Publish"}
+                                </Button>
+                              )}
                             </div>
-                            {assessment.status === "DRAFT" && (
-                              <Button
-                                size="sm"
-                                className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-                                onClick={async () => {
-                                  setSubmittingAssessmentId(assessment.id);
-                                  try {
-                                    await lectureService.publishAssessment(assessment.id);
-                                    await fetchLecture();
-                                  } finally {
-                                    setSubmittingAssessmentId(null);
-                                  }
-                                }}
-                                disabled={submittingAssessmentId === assessment.id}
-                              >
-                                {submittingAssessmentId === assessment.id ? "Publishing..." : "Publish"}
-                              </Button>
-                            )}
-                          </div>
-                          {assessment.status === "DRAFT" && (
-                            <div className="mb-2">
+                            <div className="mb-2 flex flex-wrap gap-2">
                               <Button
                                 size="sm"
                                 className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
@@ -265,28 +334,98 @@ export default function LectureDetailPage() {
                                 Edit assessment
                               </Button>
                             </div>
-                          )}
-                          <QuizTaker
-                            quiz={assessment as Quiz}
-                            onSubmit={async (answers) => {
-                              return await lectureService.submitAssessmentAttempt(assessment.id, memberId, answers);
-                            }}
-                            onSubmitted={(response) => {
-                              router.push(
-                                `/lectures/${lectureId as string}/assessment-attempts/${response.attempt.id}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
-                              );
-                            }}
-                            isSubmitting={false}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
-                      <p className="text-slate-300">No assessments generated yet. Generate one from Overview tab.</p>
-                    </div>
-                  )}
-                </TabsContent>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
+                        <p className="text-slate-300">No assessments generated yet. Generate one from Overview tab.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                ) : (
+                  <TabsContent value="quiz" className="space-y-4 mt-0">
+                    {assessments.length > 0 ? (
+                      <div className="space-y-4">
+                        {assessments.map((assessment) => (
+                          <div
+                            key={assessment.id}
+                            className="rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] p-6 transition-all duration-200 hover:border-cyan-400/30 hover:shadow-lg hover:shadow-cyan-950/20"
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-4">
+                              <div>
+                                <h3 className="text-xl font-semibold text-white">{assessment.title}</h3>
+                                <p className="text-sm text-slate-400">
+                                  {assessment.type} · {assessment.status} · {assessment.totalQuestions} questions
+                                </p>
+                              </div>
+                            </div>
+
+                            {currentAttempt ? (
+                              <Card className="border border-emerald-400/20 bg-emerald-400/5 p-6 rounded-2xl space-y-4">
+                                <div className="space-y-2">
+                                  <p className="text-sm font-medium text-emerald-200">You already submitted this quiz</p>
+                                  <p className="text-sm text-slate-300">
+                                    Submitted at {currentAttempt.submittedAt ? new Date(currentAttempt.submittedAt).toLocaleString() : "-"}
+                                  </p>
+                                  <p className="text-sm text-slate-300">
+                                    Final score: {currentAttempt.finalScore.toFixed(1)}
+                                  </p>
+                                </div>
+
+                                <Button
+                                  size="sm"
+                                  className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+                                  onClick={() => router.push(getAttemptHref(currentAttempt.id))}
+                                >
+                                  View attempt
+                                </Button>
+                              </Card>
+                            ) : (
+                              <QuizTaker
+                                quiz={assessment as Quiz}
+                                onSubmit={async (answers) => {
+                                  setIsSubmittingAssessmentAttempt(true);
+
+                                  try {
+                                    return await lectureService.submitAssessmentAttempt(assessment.id, memberId, answers);
+                                  } catch (error) {
+                                    if (isAxiosError(error) && error.response?.status === 409) {
+                                      const refreshedLecture = await lectureService.getLectureById(lectureId as string);
+                                      const refreshedAttempt = refreshedLecture.assessment?.attempts?.find(
+                                        (attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)
+                                      );
+
+                                      if (refreshedAttempt) {
+                                        toast({
+                                          title: "Already submitted",
+                                          description: "You have already completed this quiz. Opening your attempt.",
+                                        });
+                                        return buildSubmitResponse(refreshedAttempt);
+                                      }
+                                    }
+
+                                    throw error;
+                                  } finally {
+                                    setIsSubmittingAssessmentAttempt(false);
+                                  }
+                                }}
+                                onSubmitted={(response) => {
+                                  router.push(getAttemptHref(response.attempt.id));
+                                }}
+                                isSubmitting={isSubmittingAssessmentAttempt}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
+                        <p className="text-slate-300">No assessments generated yet. Generate one from Overview tab.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                )}
               </div>
             </div>
           </Tabs>

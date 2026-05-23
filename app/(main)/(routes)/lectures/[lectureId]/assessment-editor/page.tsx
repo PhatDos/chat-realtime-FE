@@ -43,6 +43,7 @@ export default function AssessmentEditorPage() {
   }
 
   const assessment = lecture?.assessment?.id === assessmentId ? lecture.assessment : null;
+  const isOwner = lecture?.memberId === memberId;
 
   if (!lecture || !assessment) {
     return (
@@ -54,6 +55,26 @@ export default function AssessmentEditorPage() {
               className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
               onClick={handleBackClick}
               disabled={isNavigating}
+            >
+              Back
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isOwner) {
+    return (
+      <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-6">
+        <Card className="border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/30 backdrop-blur-xl space-y-4 max-w-md">
+          <p className="text-slate-300">Only the lecture owner can edit or publish this assessment.</p>
+          <div>
+            <Button
+              className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+              onClick={handleBackClick}
+              disabled={isNavigating}
+              type="button"
             >
               Back
             </Button>
@@ -79,6 +100,7 @@ export default function AssessmentEditorPage() {
               className="border border-white/10 text-slate-200"
               onClick={handleBackClick}
               disabled={isNavigating}
+              type="button"
             >
               Back
             </Button>

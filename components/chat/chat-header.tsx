@@ -41,9 +41,9 @@ export const ChatHeader = ({
       {type === 'channel' && (
         <Hash className='w-5 h-4 text-zinc-500 dark:text-zinc-400 mr-2' />
       )}
-      {type === 'conversation' && (
+      {type === 'conversation' && otherProfileId && (
         <ProfileHoverCard
-          id={otherProfileId ?? ''}
+          id={otherProfileId}
           name={name}
           imageUrl={imageUrl}
           currentProfileId={currentProfileId}

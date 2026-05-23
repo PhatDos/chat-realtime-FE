@@ -194,13 +194,13 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
       {/* Tabs */}
       <Tabs defaultValue="incoming" className="flex-1 flex flex-col border-t border-zinc-200 dark:border-zinc-700">
         <TabsList className="grid w-full grid-cols-2 rounded-none border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
-          <TabsTrigger value="incoming" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-zinc-700 dark:text-zinc-300">
+          <TabsTrigger value="incoming" className="rounded-none data-[state=active]:border-blue-500 text-zinc-700 dark:text-zinc-300">
             Incoming
             {incomingRequests.length > 0 && (
               <span className="ml-1 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{incomingRequests.length}</span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="sent" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 text-zinc-700 dark:text-zinc-300">
+          <TabsTrigger value="sent" className="rounded-none data-[state=active]:border-blue-500 text-zinc-700 dark:text-zinc-300">
             Sent
             {sentRequests.length > 0 && (
               <span className="ml-1 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded-full">{sentRequests.length}</span>

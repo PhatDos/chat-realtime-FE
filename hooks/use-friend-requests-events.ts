@@ -191,18 +191,23 @@ export const useFriendRequestsEvents = () => {
 
               switch (payload.type) {
                 case "FRIEND_REQUEST_CREATED": {
-                  queryClient.setQueryData(
-                    ["friend-status", payload.actorProfileId],
-                    (current: FriendshipInfoDto | undefined) => ({
-                      id: payload.actorProfileId,
-                      name: current?.name ?? actorProfileName,
-                      imageUrl: current?.imageUrl ?? actorProfileImageUrl,
-                      isFriend: false,
-                      pendingRequest: payload.request
-                        ? { id: payload.request.id, direction: "received" as const }
-                        : null,
-                    })
-                  );
+                  const fromProfileId = payload.request?.fromProfileId ?? payload.actorProfileId;
+
+                  if (payload.request) {
+                    queryClient.setQueryData(
+                      ["friend-status", fromProfileId],
+                      (current: FriendshipInfoDto | undefined) => ({
+                        id: fromProfileId,
+                        name: current?.name ?? actorProfileName,
+                        imageUrl: current?.imageUrl ?? actorProfileImageUrl,
+                        isFriend: false,
+                        pendingRequest: {
+                          id: payload.request!.id,
+                          direction: "received" as const,
+                        },
+                      })
+                    );
+                  }
 
                   if (isAudience) {
                     upsertIncomingFromEvent(payload);
@@ -214,10 +219,13 @@ export const useFriendRequestsEvents = () => {
                   break;
                 }
                 case "FRIEND_REQUEST_ACCEPTED": {
+                  const fromProfileId = payload.request?.fromProfileId ?? payload.actorProfileId;
+                  const toProfileId = payload.request?.toProfileId ?? payload.audienceProfileId;
+
                   queryClient.setQueryData(
-                    ["friend-status", payload.actorProfileId],
+                    ["friend-status", fromProfileId],
                     (current: FriendshipInfoDto | undefined) => ({
-                      id: payload.actorProfileId,
+                      id: fromProfileId,
                       name: current?.name ?? actorProfileName,
                       imageUrl: current?.imageUrl ?? actorProfileImageUrl,
                       isFriend: true,
@@ -225,9 +233,9 @@ export const useFriendRequestsEvents = () => {
                     })
                   );
                   queryClient.setQueryData(
-                    ["friend-status", payload.audienceProfileId],
+                    ["friend-status", toProfileId],
                     (current: FriendshipInfoDto | undefined) => ({
-                      id: payload.audienceProfileId,
+                      id: toProfileId,
                       name: current?.name ?? "",
                       imageUrl: current?.imageUrl ?? "",
                       isFriend: true,
@@ -244,10 +252,23 @@ export const useFriendRequestsEvents = () => {
                   break;
                 }
                 case "FRIEND_REQUEST_REJECTED": {
+                  const fromProfileId = payload.request?.fromProfileId ?? payload.actorProfileId;
+                  const toProfileId = payload.request?.toProfileId ?? payload.audienceProfileId;
+
                   queryClient.setQueryData(
-                    ["friend-status", payload.actorProfileId],
+                    ["friend-status", fromProfileId],
                     (current: FriendshipInfoDto | undefined) => ({
-                      id: payload.actorProfileId,
+                      id: fromProfileId,
+                      name: current?.name ?? actorProfileName,
+                      imageUrl: current?.imageUrl ?? actorProfileImageUrl,
+                      isFriend: false,
+                      pendingRequest: null,
+                    })
+                  );
+                  queryClient.setQueryData(
+                    ["friend-status", toProfileId],
+                    (current: FriendshipInfoDto | undefined) => ({
+                      id: toProfileId,
                       name: current?.name ?? actorProfileName,
                       imageUrl: current?.imageUrl ?? actorProfileImageUrl,
                       isFriend: false,
@@ -264,10 +285,23 @@ export const useFriendRequestsEvents = () => {
                   break;
                 }
                 case "FRIEND_REQUEST_CANCELLED": {
+                  const fromProfileId = payload.request?.fromProfileId ?? payload.actorProfileId;
+                  const toProfileId = payload.request?.toProfileId ?? payload.audienceProfileId;
+
                   queryClient.setQueryData(
-                    ["friend-status", payload.actorProfileId],
+                    ["friend-status", fromProfileId],
                     (current: FriendshipInfoDto | undefined) => ({
-                      id: payload.actorProfileId,
+                      id: fromProfileId,
+                      name: current?.name ?? actorProfileName,
+                      imageUrl: current?.imageUrl ?? actorProfileImageUrl,
+                      isFriend: false,
+                      pendingRequest: null,
+                    })
+                  );
+                  queryClient.setQueryData(
+                    ["friend-status", toProfileId],
+                    (current: FriendshipInfoDto | undefined) => ({
+                      id: toProfileId,
                       name: current?.name ?? actorProfileName,
                       imageUrl: current?.imageUrl ?? actorProfileImageUrl,
                       isFriend: false,

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Globe, Lock, Users, FileIcon, X } from "lucide-react";
 import Image from "next/image";
