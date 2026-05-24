@@ -65,12 +65,12 @@ export interface Assessment {
   totalQuestions: number;
   totalPoints: number;
   durationMinutes?: number | null;
-  allowReview: boolean;
   allowLateSubmission: boolean;
   expiresAt?: string | null;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
+  isDraft?: boolean;
   questions?: AssessmentQuestion[];
   attempts?: AssessmentAttempt[];
 }
@@ -166,6 +166,30 @@ export interface GenerateQuizPayload {
   questionCount: number;
 }
 
+export interface CreateAssessmentPayload {
+  title: string;
+  description?: string | null;
+  type?: Assessment['type'];
+  status?: Assessment['status'];
+  totalPoints?: number;
+  durationMinutes?: number | null;
+  allowLateSubmission?: boolean;
+  expiresAt?: string | null;
+  generatedByAI?: boolean;
+  questions: Array<{
+    questionText: string;
+    type?: AssessmentQuestion['type'];
+    points?: number;
+    explanation?: string | null;
+    order?: number;
+    options?: Array<{
+      optionText: string;
+      isCorrect?: boolean;
+      order?: number;
+    }>;
+  }>;
+}
+
 /**
  * Lecture Service - API calls for lecture operations
  */
@@ -237,6 +261,10 @@ export function useLectureService() {
           quiz: Assessment;
           message: string;
         }>(`/lectures/${lectureId}/generate/assessment`, payload);
+      },
+
+      createAssessment: async (lectureId: string, payload: CreateAssessmentPayload) => {
+        return apiClient.post<Assessment>(`/lectures/${lectureId}/assessment`, payload);
       },
 
       getAssessmentAttempt: async (attemptId: string) => {
@@ -316,24 +344,6 @@ export function useLectureService() {
 
       deleteAssessmentQuestion: async (questionId: string) => {
         return apiClient.delete<{ success: boolean }>(`/lectures/assessment/questions/${questionId}`);
-      },
-
-      addAssessmentOption: async (
-        questionId: string,
-        payload: { optionText: string; isCorrect?: boolean; order?: number }
-      ) => {
-        return apiClient.post<AssessmentOption>(`/lectures/assessment/questions/${questionId}/options`, payload);
-      },
-
-      updateAssessmentOption: async (
-        optionId: string,
-        payload: Partial<Pick<AssessmentOption, 'optionText' | 'isCorrect' | 'order'>>
-      ) => {
-        return apiClient.patch<AssessmentOption>(`/lectures/assessment/options/${optionId}`, payload);
-      },
-
-      deleteAssessmentOption: async (optionId: string) => {
-        return apiClient.delete<{ success: boolean }>(`/lectures/assessment/options/${optionId}`);
       },
 
       publishAssessment: async (assessmentId: string) => {

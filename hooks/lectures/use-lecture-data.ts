@@ -116,7 +116,7 @@ export function useLectureData(lectureId: string | null) {
           const newAssessment = result.assessment || result.quiz;
           return {
             ...prev,
-            assessment: newAssessment,
+            assessment: newAssessment ? { ...newAssessment, isDraft: true } : newAssessment,
           };
         });
 
@@ -124,7 +124,7 @@ export function useLectureData(lectureId: string | null) {
           title: "Success",
           description: result.message,
         });
-        return (result.assessment || result.quiz) as Assessment;
+        return ((result.assessment || result.quiz) ? { ...(result.assessment || result.quiz), isDraft: true } : null) as Assessment;
       } catch (error: any) {
         toast({
           title: "Error",

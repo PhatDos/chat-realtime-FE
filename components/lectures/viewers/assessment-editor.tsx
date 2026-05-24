@@ -12,6 +12,14 @@ import { Loader2 } from "lucide-react";
 type AssessmentQuestion = NonNullable<Assessment["questions"]>[number];
 type AssessmentOption = AssessmentQuestion["options"][number];
 
+type DraftQuestionOption = {
+  id: string;
+  questionId: string;
+  order: number;
+  optionText: string;
+  isCorrect: boolean;
+};
+
 const SUPPORTED_QUESTION_TYPES = ["MULTIPLE_CHOICE", "TRUE_FALSE"] as const;
 
 type SupportedQuestionType = (typeof SUPPORTED_QUESTION_TYPES)[number];
@@ -24,6 +32,18 @@ function isSingleCorrectAnswerQuestion(type: AssessmentQuestion["type"]) {
   return type === "MULTIPLE_CHOICE" || type === "TRUE_FALSE";
 }
 
+function createDraftQuestionOptions(questionType: AssessmentQuestion["type"], questionId = "draft-question") {
+  const optionTexts = questionType === "TRUE_FALSE" ? ["True", "False"] : ["Option A", "Option B", "Option C", "Option D"];
+
+  return optionTexts.map((optionText, index) => ({
+    id: `${questionId}-option-${index + 1}`,
+    questionId,
+    order: index + 1,
+    optionText,
+    isCorrect: index === 0,
+  }));
+}
+
 interface AssessmentEditorProps {
   assessment: Assessment;
   onChanged?: () => Promise<void> | void;
@@ -32,32 +52,31 @@ interface AssessmentEditorProps {
 export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProps) {
   const service = useLectureService();
   const { toast } = useToast();
+  const isDraftAssessment = Boolean(assessment.isDraft);
 
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
   const [title, setTitle] = useState(assessment.title);
   const [description, setDescription] = useState(assessment.description ?? "");
   const [type, setType] = useState<Assessment["type"]>(assessment.type);
-  const [status, setStatus] = useState<Assessment["status"]>(assessment.status);
   const [durationMinutes, setDurationMinutes] = useState<string>(assessment.durationMinutes?.toString() ?? "");
   const [expiresAt, setExpiresAt] = useState<string>(assessment.expiresAt ? assessment.expiresAt.slice(0, 16) : "");
-  const [allowReview, setAllowReview] = useState(assessment.allowReview);
   const [allowLateSubmission, setAllowLateSubmission] = useState(assessment.allowLateSubmission);
   const [questions, setQuestions] = useState(assessment.questions ?? []);
   const [newQuestionText, setNewQuestionText] = useState("");
   const [newQuestionPoints, setNewQuestionPoints] = useState("1");
   const [newQuestionType, setNewQuestionType] = useState<AssessmentQuestion["type"] | "MULTIPLE_CHOICE">("MULTIPLE_CHOICE");
   const [newQuestionExplanation, setNewQuestionExplanation] = useState("");
+  const [newQuestionOptions, setNewQuestionOptions] = useState<DraftQuestionOption[]>(() =>
+    createDraftQuestionOptions("MULTIPLE_CHOICE")
+  );
 
   useEffect(() => {
     setTitle(assessment.title);
     setDescription(assessment.description ?? "");
     setType(assessment.type);
-    setStatus(assessment.status);
     setDurationMinutes(assessment.durationMinutes?.toString() ?? "");
     setExpiresAt(assessment.expiresAt ? assessment.expiresAt.slice(0, 16) : "");
-    setAllowReview(assessment.allowReview);
     setAllowLateSubmission(assessment.allowLateSubmission);
     setQuestions(assessment.questions ?? []);
   }, [assessment]);
@@ -66,41 +85,43 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
   const isLoading = (action: string) => loadingAction === action;
 
   const handleSaveAssessment = async () => {
+    if (!isDraftAssessment) {
+      toast({ title: "Read only", description: "Use the create flow to save a new assessment." });
+      return;
+    }
+
     setLoadingAction("save-assessment");
     setSaving(true);
     try {
-      const updatedAssessment = await service.updateAssessment(assessment.id, {
+      const createdAssessment = await service.createAssessment(assessment.lectureId ?? "", {
         title,
         description: description.trim() || null,
         type,
-        status,
         durationMinutes: durationMinutes ? Number(durationMinutes) : null,
         expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
-        allowReview,
         allowLateSubmission,
-        totalPoints: assessment.totalPoints,
+        generatedByAI: true,
+        questions: questions.map((question, index) => ({
+          questionText: question.questionText,
+          type: question.type,
+          points: question.points,
+          explanation: question.explanation ?? null,
+          order: question.order ?? index + 1,
+          options: question.options.map((option, optionIndex) => ({
+            optionText: option.optionText,
+            isCorrect: option.isCorrect,
+            order: option.order ?? optionIndex + 1,
+          })),
+        })),
       });
-      setStatus(updatedAssessment.status);
-      toast({ title: "Saved", description: "Assessment updated" });
+
+      toast({ title: "Created", description: "Assessment saved to database" });
+      await onChanged?.();
+      return createdAssessment;
     } catch (error) {
       toast({ title: "Error", description: getErrorMessage(error, "Failed to save assessment"), variant: "destructive" });
     } finally {
       setSaving(false);
-      setLoadingAction(null);
-    }
-  };
-
-  const handlePublish = async () => {
-    setLoadingAction("publish-assessment");
-    setPublishing(true);
-    try {
-      const updatedAssessment = await service.publishAssessment(assessment.id);
-      setStatus(updatedAssessment.status);
-      toast({ title: "Published", description: "Assessment is now live" });
-    } catch (error) {
-      toast({ title: "Error", description: getErrorMessage(error, "Failed to publish assessment"), variant: "destructive" });
-    } finally {
-      setPublishing(false);
       setLoadingAction(null);
     }
   };
@@ -110,35 +131,104 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
 
     try {
       setLoadingAction("add-question");
-      const created = await service.addAssessmentQuestion(assessment.id, {
-        questionText: newQuestionText,
-        points: Number(newQuestionPoints) || 1,
-        type: newQuestionType,
-        explanation: newQuestionExplanation.trim() || null,
-      });
-      // If it's a multiple choice question, create default options (A-D)
-      if (newQuestionType === "MULTIPLE_CHOICE") {
-        const defaultOptions = ["Option A", "Option B", "Option C", "Option D"];
-        await Promise.all(
-          defaultOptions.map((text, idx) =>
-            service.addAssessmentOption(created.id, {
-              optionText: text,
-              order: idx + 1,
-              isCorrect: false,
-            })
-          )
-        );
+      if (isDraftAssessment) {
+        const tempId = `draft-question-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        setQuestions((prev) => [
+          ...prev,
+          {
+            id: tempId,
+            assessmentId: assessment.id,
+            order: prev.length + 1,
+            questionText: newQuestionText,
+            type: newQuestionType,
+            points: Number(newQuestionPoints) || 1,
+            explanation: newQuestionExplanation.trim() || undefined,
+            options: newQuestionOptions.map((option, index) => ({
+              id: `${tempId}-option-${index + 1}`,
+              questionId: tempId,
+              order: option.order ?? index + 1,
+              optionText: option.optionText,
+              isCorrect: option.isCorrect,
+            })),
+          },
+        ]);
+      } else {
+        const created = await service.addAssessmentQuestion(assessment.id, {
+          questionText: newQuestionText,
+          points: Number(newQuestionPoints) || 1,
+          type: newQuestionType,
+          explanation: newQuestionExplanation.trim() || null,
+          options: newQuestionOptions.map((option, index) => ({
+            optionText: option.optionText,
+            order: option.order ?? index + 1,
+            isCorrect: option.isCorrect,
+          })),
+        });
+
+        setQuestions((prev) => [
+          ...prev,
+          {
+            ...created,
+            options: created.options ?? [],
+          },
+        ]);
       }
 
       setNewQuestionText("");
       setNewQuestionPoints("1");
+      setNewQuestionType("MULTIPLE_CHOICE");
       setNewQuestionExplanation("");
+      setNewQuestionOptions(createDraftQuestionOptions("MULTIPLE_CHOICE"));
       toast({ title: "Question added", description: "New question added to assessment" });
     } catch (error) {
       toast({ title: "Error", description: getErrorMessage(error, "Failed to add question"), variant: "destructive" });
     } finally {
       setLoadingAction(null);
     }
+  };
+
+  const handleNewQuestionTypeChange = (nextType: AssessmentQuestion["type"]) => {
+    setNewQuestionType(nextType);
+    setNewQuestionOptions(createDraftQuestionOptions(nextType));
+  };
+
+  const handleNewQuestionOptionTextChange = (optionId: string, optionText: string) => {
+    setNewQuestionOptions((prev) => prev.map((option) => (option.id === optionId ? { ...option, optionText } : option)));
+  };
+
+  const handleNewQuestionOptionCorrectChange = (optionId: string, isCorrect: boolean) => {
+    setNewQuestionOptions((prev) => {
+      const shouldKeepOnlyOneCorrect = isCorrect && isSingleCorrectAnswerQuestion(newQuestionType);
+
+      return prev.map((option) => {
+        if (option.id === optionId) {
+          return { ...option, isCorrect };
+        }
+
+        if (shouldKeepOnlyOneCorrect) {
+          return { ...option, isCorrect: false };
+        }
+
+        return option;
+      });
+    });
+  };
+
+  const handleNewQuestionAddOption = () => {
+    setNewQuestionOptions((prev) => [
+      ...prev,
+      {
+        id: `draft-option-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        questionId: "draft-question",
+        order: prev.length + 1,
+        optionText: `Option ${prev.length + 1}`,
+        isCorrect: false,
+      },
+    ]);
+  };
+
+  const handleNewQuestionDeleteOption = (optionId: string) => {
+    setNewQuestionOptions((prev) => prev.filter((option) => option.id !== optionId));
   };
 
   const handleUpdateQuestion = async (
@@ -151,6 +241,28 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
       options: Array<{ id: string; optionText: string; isCorrect: boolean; order: number }>;
     }
   ) => {
+    if (isDraftAssessment) {
+      setQuestions((prev) =>
+        prev.map((question) =>
+          question.id === questionId
+            ? {
+                ...question,
+                questionText: payload.questionText,
+                points: payload.points,
+                explanation: payload.explanation.trim() || undefined,
+                type: payload.type,
+                options: payload.options.map((option) => ({
+                  ...option,
+                  questionId,
+                })),
+              }
+            : question
+        )
+      );
+      toast({ title: "Draft updated", description: "Question updated locally" });
+      return;
+    }
+
     try {
       setLoadingAction(`question-save-${questionId}`);
       const updated = await service.updateAssessmentQuestion(questionId, {
@@ -169,6 +281,12 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
     }
   };
   const handleDeleteQuestion = async (questionId: string) => {
+    if (isDraftAssessment) {
+      setQuestions((prev) => prev.filter((question) => question.id !== questionId));
+      toast({ title: "Draft updated", description: "Question removed locally" });
+      return;
+    }
+
     try {
       setLoadingAction(`question-delete-${questionId}`);
       await service.deleteAssessmentQuestion(questionId);
@@ -184,43 +302,37 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
     const question = questions.find((item) => item.id === questionId);
     if (!question) return;
 
-    try {
-      setLoadingAction(`option-add-${questionId}`);
-      const created = await service.addAssessmentOption(questionId, {
-        optionText: `Option ${question.options.length + 1}`,
-        order: question.options.length + 1,
-        isCorrect: false,
-      });
-      setQuestions((prev) =>
-        prev.map((item) =>
-          item.id === questionId ? { ...item, options: [...item.options, created] } : item
-        )
-      );
-      toast({ title: "Option added", description: "Added a new answer option" });
-    } catch (error) {
-      toast({ title: "Error", description: getErrorMessage(error, "Failed to add option"), variant: "destructive" });
-    } finally {
-      setLoadingAction(null);
-    }
+    setQuestions((prev) =>
+      prev.map((item) =>
+        item.id === questionId
+          ? {
+              ...item,
+              options: [
+                ...item.options,
+                {
+                  id: `draft-option-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                  questionId,
+                  order: item.options.length + 1,
+                  optionText: `Option ${item.options.length + 1}`,
+                  isCorrect: false,
+                },
+              ],
+            }
+          : item
+      )
+    );
+    toast({ title: "Option added", description: "Added a new answer option" });
   };
 
   const handleDeleteOption = async (questionId: string, optionId: string) => {
-    try {
-      setLoadingAction(`option-delete-${optionId}`);
-      await service.deleteAssessmentOption(optionId);
-      setQuestions((prev) =>
-        prev.map((question) =>
-          question.id === questionId
-            ? { ...question, options: question.options.filter((option) => option.id !== optionId) }
-            : question
-        )
-      );
-      toast({ title: "Option deleted", description: "Option removed" });
-    } catch (error) {
-      toast({ title: "Error", description: getErrorMessage(error, "Failed to delete option"), variant: "destructive" });
-    } finally {
-      setLoadingAction(null);
-    }
+    setQuestions((prev) =>
+      prev.map((question) =>
+        question.id === questionId
+          ? { ...question, options: question.options.filter((option) => option.id !== optionId) }
+          : question
+      )
+    );
+    toast({ title: "Option deleted", description: "Option removed" });
   };
 
   return (
@@ -230,6 +342,9 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
           <div>
             <h3 className="text-lg font-semibold text-white">Assessment editor</h3>
             <p className="text-sm text-slate-400">{questionCount} questions · {assessment.totalPoints} points</p>
+            {isDraftAssessment ? (
+              <p className="text-xs text-amber-200">Draft preview</p>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
             <Button type="button" onClick={handleSaveAssessment} disabled={saving || isLoading("save-assessment")} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
@@ -239,17 +354,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
                   Saving...
                 </>
               ) : (
-                "Save"
-              )}
-            </Button>
-            <Button type="button" onClick={handlePublish} disabled={publishing || isLoading("publish-assessment")} variant="outline" className="border-white/10 text-slate-200">
-              {isLoading("publish-assessment") ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Publishing...
-                </>
-              ) : (
-                "Publish"
+                "Create assessment"
               )}
             </Button>
           </div>
@@ -307,10 +412,6 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
             />
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-200">
-            <input type="checkbox" checked={allowReview} onChange={(event) => setAllowReview(event.target.checked)} />
-            Allow review
-          </label>
-          <label className="flex items-center gap-2 text-sm text-slate-200">
             <input type="checkbox" checked={allowLateSubmission} onChange={(event) => setAllowLateSubmission(event.target.checked)} />
             Allow late submission
           </label>
@@ -318,14 +419,30 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
       </Card>
 
       <Card className="p-5 border border-white/10 bg-white/5 rounded-2xl space-y-4">
-        <h4 className="text-base font-semibold text-white">Add question</h4>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h4 className="text-base font-semibold text-white">Add question</h4>
+            <p className="text-sm text-slate-400">Compose the question fully, then add it to the assessment.</p>
+          </div>
+          <Button type="button" onClick={handleAddQuestion} disabled={isLoading("add-question")} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
+            {isLoading("add-question") ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              "Add question"
+            )}
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2 md:col-span-2">
             <Label>Question text</Label>
             <textarea
               value={newQuestionText}
               onChange={(event) => setNewQuestionText(event.target.value)}
-              className="min-h-24 w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
+              className="min-h-20 w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
             />
           </div>
           <div className="space-y-2">
@@ -343,7 +460,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
             <Label>Type</Label>
             <select
               value={newQuestionType}
-              onChange={(event) => setNewQuestionType(event.target.value as AssessmentQuestion["type"])}
+              onChange={(event) => handleNewQuestionTypeChange(event.target.value as AssessmentQuestion["type"])}
               className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
             >
               {SUPPORTED_QUESTION_TYPES.map((questionType) => (
@@ -362,16 +479,37 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
             />
           </div>
         </div>
-        <Button type="button" onClick={handleAddQuestion} disabled={isLoading("add-question")} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-          {isLoading("add-question") ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Adding...
-            </>
-          ) : (
-            "Add question"
-          )}
-        </Button>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h6 className="text-sm font-semibold text-slate-300">Options</h6>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-white/10 text-slate-200"
+              onClick={handleNewQuestionAddOption}
+            >
+              Add option
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {newQuestionOptions.map((option) => (
+              <OptionEditor
+                key={option.id}
+                questionId="draft-question"
+                questionType={newQuestionType}
+                option={option}
+                onDeleteOption={async (_, optionId) => {
+                  handleNewQuestionDeleteOption(optionId);
+                }}
+                onSetOptionCorrect={handleNewQuestionOptionCorrectChange}
+                onUpdateOptionText={handleNewQuestionOptionTextChange}
+                loadingAction={loadingAction}
+              />
+            ))}
+          </div>
+        </div>
       </Card>
 
       <div className="space-y-4">

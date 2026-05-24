@@ -1,21 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { isAxiosError } from "axios";
 import { useLectureData } from "@/hooks/lectures/use-lecture-data";
 import { useLectureService, type LectureFileRow } from "@/services/lectures/lecture.service";
-import type {
-  Assessment,
-  AssessmentAttempt,
-  Quiz,
-  SubmitAssessmentAttemptResponse,
-} from "@/services/lectures/lecture.service";
+import type { Assessment } from "@/services/lectures/lecture.service";
 import { AssessmentEditor } from "@/components/lectures/viewers/assessment-editor";
 import { SummaryViewer } from "@/components/lectures/viewers/summary-viewer";
 import { FlashcardViewer } from "@/components/lectures/viewers/flashcard-viewer";
-import { QuizTaker } from "@/components/lectures/viewers/quiz-taker";
 import { LectureOverviewSection } from "@/components/lectures/viewers/lecture-overview-section";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,14 +16,12 @@ import { Card } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Sparkles, BookOpen, CalendarDays, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useServerSidebarQuery } from "@/hooks/use-server-sidebar-query";
-import { useToast } from "@/hooks/use-toast";
 
 export default function LectureDetailPage() {
   const { lectureId } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const lectureService = useLectureService();
-  const { toast } = useToast();
   const { lecture, loading, generating, fetchLecture, generateSummary, generateFlashcards, generateQuiz } =
     useLectureData(lectureId as string);
   const [lectureFiles, setLectureFiles] = useState<LectureFileRow[]>([]);
@@ -45,11 +36,10 @@ export default function LectureDetailPage() {
   const viewMode = searchParams.get("view") ?? "";
   const isOwner = lecture?.memberId === memberId;
   const isStudentView = viewMode === "student" && !isOwner;
-  const availableTabs = isOwner ? ["overview", "summary", "flashcards", "edit-quiz"] : ["overview", "summary", "flashcards", "quiz"];
-  const defaultTab = viewMode === "student" && !isOwner ? "quiz" : searchParams.get("tab") ?? "overview";
+  const availableTabs = isOwner ? ["overview", "summary", "flashcards", "edit-quiz"] : ["overview", "summary", "flashcards"];
+  const defaultTab = searchParams.get("tab") ?? "overview";
   const [activeTab, setActiveTab] = useState(availableTabs.includes(defaultTab) ? defaultTab : availableTabs[0]);
   const [submittingAssessmentId, setSubmittingAssessmentId] = useState<string | null>(null);
-  const [isSubmittingAssessmentAttempt, setIsSubmittingAssessmentAttempt] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const { data: serverSidebarData } = useServerSidebarQuery({
     serverId,
@@ -61,44 +51,12 @@ export default function LectureDetailPage() {
       : "/lectures";
   const channelName = serverSidebarData?.server.channels.find((channel) => channel.id === channelId)?.name;
   const assessments = lecture?.assessment ? [lecture.assessment as Assessment] : [];
-  const currentAssessment = assessments[0] ?? null;
-  const currentAttempt = useMemo(() => {
-    if (!currentAssessment || !memberId) {
-      return null;
-    }
-
-    return (
-      currentAssessment.attempts?.find(
-        (attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)
-      ) ?? null
-    );
-  }, [currentAssessment, memberId]);
-
-  const getAttemptHref = (attemptId: string) =>
-    `/lectures/${lectureId as string}/assessment-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
+  const draftAssessment = lecture?.assessment?.isDraft ? (lecture.assessment as Assessment) : null;
+  const persistedAssessments = assessments.filter((assessment) => !assessment.isDraft);
+  const reviewAssessment = persistedAssessments[0] ?? null;
 
   const getLectureHref = (tab: string) =>
     `/lectures/${lectureId as string}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&tab=${encodeURIComponent(tab)}`;
-
-  const buildSubmitResponse = (attempt: AssessmentAttempt): SubmitAssessmentAttemptResponse => {
-    const totalQuestions = attempt.assessment?.totalQuestions ?? attempt.answers?.length ?? 0;
-    const correctCount = attempt.answers?.reduce(
-      (count, answer) => count + (answer.isCorrect ? 1 : 0),
-      0
-    );
-    const finalScore = attempt.finalScore;
-    const score = totalQuestions > 0 ? (finalScore / totalQuestions) * 100 : 0;
-
-    return {
-      success: true,
-      attempt,
-      score,
-      correctCount: correctCount ?? 0,
-      totalQuestions,
-      totalPoints: attempt.assessment?.totalPoints,
-      finalScore,
-    };
-  };
 
   useEffect(() => {
     fetchLecture();
@@ -128,18 +86,11 @@ export default function LectureDetailPage() {
     router.push(backHref);
   };
 
-  const handleEditAssessmentClick = (assessmentId: string) => {
-    setIsNavigating(true);
-    router.push(
-      `/lectures/${lectureId as string}/assessment-editor?assessmentId=${assessmentId}&serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`
-    );
-  };
-
   const handleGenerateQuiz = async (questionCount: number) => {
     const generatedAssessment = await generateQuiz(questionCount);
 
     if (generatedAssessment?.id) {
-      handleEditAssessmentClick(generatedAssessment.id);
+      setActiveTab("edit-quiz");
     }
   };
 
@@ -208,7 +159,7 @@ export default function LectureDetailPage() {
               </span>
             )}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-              {isOwner ? "Owner / teacher view" : "Student / member view"}
+              {isOwner ? "Owner view" : "Member view"}
             </span>
             {viewMode === "student" && !isOwner && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200">
@@ -223,7 +174,7 @@ export default function LectureDetailPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="rounded-2xl border border-white/10 bg-white/5 shadow-2xl shadow-black/30 backdrop-blur-xl overflow-hidden">
               <div className="border-b border-white/10 px-6 py-4">
-                <TabsList className="grid w-full grid-cols-4 bg-transparent gap-0">
+                <TabsList className={`grid w-full bg-transparent gap-0 ${isOwner ? "grid-cols-4" : "grid-cols-3"}`}>
                   <TabsTrigger
                     value="overview"
                     className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
@@ -243,12 +194,14 @@ export default function LectureDetailPage() {
                   >
                     Flashcards
                   </TabsTrigger>
-                  <TabsTrigger
-                    value={isOwner ? "edit-quiz" : "quiz"}
-                    className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
-                  >
-                    {isOwner ? "Edit Quiz" : "Quiz"}
-                  </TabsTrigger>
+                  {isOwner ? (
+                    <TabsTrigger
+                      value="edit-quiz"
+                      className="rounded-none border-b-transparent text-slate-300 data-[state=active]:border-b-cyan-400 data-[state=active]:text-cyan-200 data-[state=active]:bg-transparent hover:text-white transition-colors"
+                    >
+                      Edit Quiz
+                    </TabsTrigger>
+                  ) : null}
                 </TabsList>
               </div>
 
@@ -262,10 +215,16 @@ export default function LectureDetailPage() {
                     hasSummary={hasSummary}
                     hasFlashcards={hasFlashcards}
                     hasQuiz={hasQuiz}
+                    isStudentView={isStudentView}
                     generating={generating}
                     onGenerateSummary={generateSummary}
                     onGenerateFlashcards={generateFlashcards}
                     onGenerateQuiz={handleGenerateQuiz}
+                    onOpenQuiz={() => {
+                      router.push(
+                        `/lectures/${lectureId as string}/quiz?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
+                      );
+                    }}
                   />
                 </TabsContent>
 
@@ -289,143 +248,65 @@ export default function LectureDetailPage() {
                   )}
                 </TabsContent>
 
-                {isOwner ? (
-                  <TabsContent value="edit-quiz" className="space-y-4 mt-0">
-                    {assessments.length > 0 ? (
-                      <div className="space-y-4">
-                        {assessments.map((assessment) => (
-                          <div
-                            key={assessment.id}
-                            className="rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] p-6 transition-all duration-200 hover:border-cyan-400/30 hover:shadow-lg hover:shadow-cyan-950/20"
-                          >
-                            <div className="flex items-start justify-between gap-3 mb-4">
-                              <div>
-                                <h3 className="text-xl font-semibold text-white">{assessment.title}</h3>
-                                <p className="text-sm text-slate-400">
-                                  {assessment.type} · {assessment.status} · {assessment.totalQuestions} questions
-                                </p>
-                              </div>
-                              {assessment.status === "DRAFT" && (
-                                <Button
-                                  size="sm"
-                                  className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-                                  onClick={async () => {
-                                    setSubmittingAssessmentId(assessment.id);
-                                    try {
-                                      await lectureService.publishAssessment(assessment.id);
-                                      await fetchLecture();
-                                    } finally {
-                                      setSubmittingAssessmentId(null);
-                                    }
-                                  }}
-                                  disabled={submittingAssessmentId === assessment.id}
-                                >
-                                  {submittingAssessmentId === assessment.id ? "Publishing..." : "Publish"}
-                                </Button>
-                              )}
-                            </div>
-                            <div className="mb-2 flex flex-wrap gap-2">
-                              <Button
-                                size="sm"
-                                className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-                                onClick={() => handleEditAssessmentClick(assessment.id)}
-                                disabled={isNavigating}
-                              >
-                                Edit assessment
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                <TabsContent value="edit-quiz" className="space-y-4 mt-0">
+                  {draftAssessment ? (
+                    <AssessmentEditor
+                      assessment={draftAssessment}
+                      onChanged={async () => {
+                        await fetchLecture();
+                      }}
+                    />
+                  ) : null}
+
+                  {reviewAssessment ? (
+                    <Card className="border border-white/10 bg-white/5 rounded-2xl p-5 space-y-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-white">{reviewAssessment.title}</h3>
+                        <p className="text-sm text-slate-400">
+                          {reviewAssessment.type} · {reviewAssessment.status} · {reviewAssessment.totalQuestions} questions
+                        </p>
                       </div>
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
-                        <p className="text-slate-300">No assessments generated yet. Generate one from Overview tab.</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                ) : (
-                  <TabsContent value="quiz" className="space-y-4 mt-0">
-                    {assessments.length > 0 ? (
+
                       <div className="space-y-4">
-                        {assessments.map((assessment) => (
-                          <div
-                            key={assessment.id}
-                            className="rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/[0.03] p-6 transition-all duration-200 hover:border-cyan-400/30 hover:shadow-lg hover:shadow-cyan-950/20"
-                          >
-                            <div className="flex items-start justify-between gap-3 mb-4">
+                        {reviewAssessment.questions?.map((question, index) => (
+                          <div key={question.id} className="rounded-xl border border-white/10 bg-slate-950/40 p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
                               <div>
-                                <h3 className="text-xl font-semibold text-white">{assessment.title}</h3>
-                                <p className="text-sm text-slate-400">
-                                  {assessment.type} · {assessment.status} · {assessment.totalQuestions} questions
-                                </p>
+                                <p className="text-sm text-cyan-200">Question {index + 1}</p>
+                                <h4 className="text-base font-medium text-white">{question.questionText}</h4>
                               </div>
+                              <div className="text-sm text-slate-400">{question.points} pts</div>
                             </div>
 
-                            {currentAttempt ? (
-                              <Card className="border border-emerald-400/20 bg-emerald-400/5 p-6 rounded-2xl space-y-4">
-                                <div className="space-y-2">
-                                  <p className="text-sm font-medium text-emerald-200">You already submitted this quiz</p>
-                                  <p className="text-sm text-slate-300">
-                                    Submitted at {currentAttempt.submittedAt ? new Date(currentAttempt.submittedAt).toLocaleString() : "-"}
-                                  </p>
-                                  <p className="text-sm text-slate-300">
-                                    Final score: {currentAttempt.finalScore.toFixed(1)}
-                                  </p>
+                            {question.explanation ? (
+                              <p className="text-sm text-slate-300">{question.explanation}</p>
+                            ) : null}
+
+                            <div className="space-y-2">
+                              {question.options.map((option) => (
+                                <div
+                                  key={option.id}
+                                  className={`rounded-lg border px-3 py-2 text-sm ${
+                                    option.isCorrect
+                                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-100"
+                                      : "border-white/10 bg-white/5 text-slate-200"
+                                  }`}
+                                >
+                                  {option.optionText}
+                                  {option.isCorrect ? " (correct)" : ""}
                                 </div>
-
-                                <Button
-                                  size="sm"
-                                  className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-                                  onClick={() => router.push(getAttemptHref(currentAttempt.id))}
-                                >
-                                  View attempt
-                                </Button>
-                              </Card>
-                            ) : (
-                              <QuizTaker
-                                quiz={assessment as Quiz}
-                                onSubmit={async (answers) => {
-                                  setIsSubmittingAssessmentAttempt(true);
-
-                                  try {
-                                    return await lectureService.submitAssessmentAttempt(assessment.id, memberId, answers);
-                                  } catch (error) {
-                                    if (isAxiosError(error) && error.response?.status === 409) {
-                                      const refreshedLecture = await lectureService.getLectureById(lectureId as string);
-                                      const refreshedAttempt = refreshedLecture.assessment?.attempts?.find(
-                                        (attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)
-                                      );
-
-                                      if (refreshedAttempt) {
-                                        toast({
-                                          title: "Already submitted",
-                                          description: "You have already completed this quiz. Opening your attempt.",
-                                        });
-                                        return buildSubmitResponse(refreshedAttempt);
-                                      }
-                                    }
-
-                                    throw error;
-                                  } finally {
-                                    setIsSubmittingAssessmentAttempt(false);
-                                  }
-                                }}
-                                onSubmitted={(response) => {
-                                  router.push(getAttemptHref(response.attempt.id));
-                                }}
-                                isSubmitting={isSubmittingAssessmentAttempt}
-                              />
-                            )}
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>
-                    ) : (
+                    </Card>
+                  ) : !draftAssessment ? (
                       <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
                         <p className="text-slate-300">No assessments generated yet. Generate one from Overview tab.</p>
                       </div>
-                    )}
+                    ) : null}
                   </TabsContent>
-                )}
               </div>
             </div>
           </Tabs>

@@ -7,12 +7,14 @@ import type { LectureFileRow } from "@/services/lectures/lecture.service";
 import type { Lecture } from "@/services/lectures/lecture.service";
 import { SummaryTone } from "@/types/lecture";
 import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface LectureOverviewSectionProps {
   lecture: Lecture;
   lectureFiles: LectureFileRow[];
   loadingLectureFiles: boolean;
   isOwner: boolean;
+  isStudentView: boolean;
   hasSummary: boolean;
   hasFlashcards: boolean;
   hasQuiz: boolean;
@@ -20,6 +22,7 @@ interface LectureOverviewSectionProps {
   onGenerateSummary: (tone: SummaryTone) => Promise<void>;
   onGenerateFlashcards: (count: number) => Promise<void>;
   onGenerateQuiz: (questionCount: number) => Promise<void | unknown>;
+  onOpenQuiz?: () => void;
 }
 
 export function LectureOverviewSection({
@@ -27,6 +30,7 @@ export function LectureOverviewSection({
   lectureFiles,
   loadingLectureFiles,
   isOwner,
+  isStudentView,
   hasSummary,
   hasFlashcards,
   hasQuiz,
@@ -34,6 +38,7 @@ export function LectureOverviewSection({
   onGenerateSummary,
   onGenerateFlashcards,
   onGenerateQuiz,
+  onOpenQuiz,
 }: LectureOverviewSectionProps) {
   return (
     <div className="space-y-6 mt-0">
@@ -116,9 +121,18 @@ export function LectureOverviewSection({
             />
           </div>
         </div>
+      ) : isStudentView ? (
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-6 text-sm text-slate-300 space-y-4">
+          <p>Student mode is view-only. Summary and flashcards are available here.</p>
+          {hasQuiz && onOpenQuiz ? (
+            <Button type="button" onClick={onOpenQuiz} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
+              Open quiz
+            </Button>
+          ) : null}
+        </div>
       ) : (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-6 text-sm text-slate-300">
-          Student mode is view-only. Use the Summary, Flashcards, or Quiz tabs to review generated content and attempts.
+          Student mode is view-only. Use the Summary and Flashcards tabs here, then open the quiz from this section when available.
         </div>
       )}
     </div>

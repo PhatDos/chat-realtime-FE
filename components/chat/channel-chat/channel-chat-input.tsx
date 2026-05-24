@@ -19,7 +19,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
 import { getAiUnreadSummary } from '@/services/ai-service'
-import { useLectureService } from '@/services/lectures/lecture.service'
 
 import { OptimisticMessage } from '@/types'
 import { chatQueryKey, insertMessage } from '@/lib/query/chat-cache'
@@ -48,12 +47,10 @@ export const ChannelChatInput = ({
   const { userId } = useAuth()
   const router = useRouter()
   const apiClient = useApiClient()
-  const lectureService = useLectureService()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const queryKey = chatQueryKey(query.channelId)
   const [isAiLoading, setIsAiLoading] = useState(false)
-  const [isLectureShortcutLoading, setIsLectureShortcutLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const onNavigateToLectureUpload = () => {
@@ -66,24 +63,8 @@ export const ChannelChatInput = ({
   const canUploadLecture = role === MemberRole.SERVEROWNER || role === MemberRole.VICESERVEROWNER
 
   const openLectureHub = async () => {
-    if (isLectureShortcutLoading) return
-
-    setIsLectureShortcutLoading(true)
-
     try {
-      const lectures = await lectureService.getLecturesByChannel(query.serverId, query.channelId)
-      const latestLecture = lectures[0]
-
-      if (!latestLecture) {
-        toast({
-          title: 'No lectures yet',
-          description: 'Upload a lecture first to open lecture materials.',
-          variant: 'destructive',
-        })
-        return
-      }
-
-      const url = `/lectures/${latestLecture.id}?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
+      const url = `/lectures?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
 
       startTransition(() => {
         void router.push(url)
@@ -94,8 +75,6 @@ export const ChannelChatInput = ({
         description: error instanceof Error ? error.message : 'Failed to open lecture',
         variant: 'destructive',
       })
-    } finally {
-      setIsLectureShortcutLoading(false)
     }
   }
 
@@ -320,11 +299,11 @@ export const ChannelChatInput = ({
                         <button
                           type='button'
                           onClick={() => void openLectureHub()}
-                          disabled={isLectureShortcutLoading}
+                          disabled={isPending}
                           className='flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-60'
                           aria-label='Lecture materials'
                         >
-                          {isLectureShortcutLoading ? (
+                          {isPending ? (
                             <Loader2 className='text-zinc-500 dark:text-zinc-400 animate-spin' size={24} />
                           ) : (
                             <BookOpen className='text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition' size={24} />

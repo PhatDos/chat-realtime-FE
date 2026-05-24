@@ -94,7 +94,9 @@ export default function AssessmentAttemptDetailPage() {
   }
 
   const totalQuestions = attempt.assessment?.totalQuestions ?? 0;
-  const score = totalQuestions > 0 ? (attempt.finalScore / totalQuestions) * 100 : 0;
+  const totalPoints = attempt.assessment?.totalPoints ?? attempt.assessment?.questions?.reduce((sum, question) => sum + (question.points ?? 0), 0) ?? 0;
+  const finalPoints = attempt.finalScore ?? 0;
+  const score = totalPoints > 0 ? (finalPoints / totalPoints) * 100 : 0;
 
   const answers = attempt.answers ?? [];
 
@@ -148,9 +150,10 @@ export default function AssessmentAttemptDetailPage() {
               </p>
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-400">Score</div>
-              <div className="text-4xl font-bold text-cyan-200">{score.toFixed(1)}%</div>
-              <div className="text-sm text-slate-300">Final score: {attempt.finalScore.toFixed(1)}</div>
+              <div className="text-left text-4xl font-bold text-cyan-200">{score.toFixed(1)}%</div>
+              <div className="text-left text-sm text-slate-300">
+                Final score: {finalPoints.toFixed(1)} / {totalPoints.toFixed(1)} points
+              </div>
             </div>
           </div>
 
@@ -174,6 +177,8 @@ export default function AssessmentAttemptDetailPage() {
           {answers.map((answer, index) => {
             const snapshot = answer.questionSnapshot as QuestionSnapshot | undefined;
             const options = snapshot?.options ?? attempt.assessment?.questions?.find((q) => q.id === answer.questionId)?.options ?? [];
+            const questionPoints = snapshot?.points ?? attempt.assessment?.questions?.find((q) => q.id === answer.questionId)?.points ?? 0;
+            const earnedPoints = answer.finalPoints ?? answer.autoPoints ?? 0;
             const selectedOption = options.find((option) => option.id === answer.selectedOptionId);
             const correctOption = options.find((option) => option.isCorrect);
             const isCorrect = answer.isCorrect ?? selectedOption?.isCorrect ?? false;
@@ -185,9 +190,14 @@ export default function AssessmentAttemptDetailPage() {
                     <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/70">Question {snapshot?.order ?? index + 1}</p>
                     <h3 className="text-lg font-semibold text-white">{snapshot?.questionText ?? answer.questionId}</h3>
                   </div>
-                  <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm ${isCorrect ? "bg-emerald-400/10 text-emerald-200" : "bg-rose-400/10 text-rose-200"}`}>
-                    {isCorrect ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                    {isCorrect ? "Correct" : "Incorrect"}
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200">
+                      Points: {earnedPoints.toFixed(1)} / {questionPoints.toFixed(1)}
+                    </div>
+                    <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm ${isCorrect ? "bg-emerald-400/10 text-emerald-200" : "bg-rose-400/10 text-rose-200"}`}>
+                      {isCorrect ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                      {isCorrect ? "Correct" : "Incorrect"}
+                    </div>
                   </div>
                 </div>
 
