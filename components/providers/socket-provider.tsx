@@ -64,12 +64,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const emitPresenceJoin = () => {
       socketInstance.emit("profile:join", { profileId });
-      console.log("📍 Emitted profile:join for profileId:", profileId);
+      // console.log("📍 Emitted profile:join for profileId:", profileId);
     };
 
     const emitPresencePing = () => {
       socketInstance.emit("presence:ping", { profileId });
-      console.log("💓 Emitted presence:ping for profileId:", profileId);
+      // console.log("💓 Emitted presence:ping for profileId:", profileId);
     };
 
     const startHeartbeat = () => {

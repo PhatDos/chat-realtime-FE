@@ -29,7 +29,6 @@ export default function LectureDetailPage() {
   const hasSummary = Boolean(lecture?.summary);
   const hasFlashcards = Boolean(lecture?.flashcardSet?.flashcards?.length);
   const hasQuiz = Boolean(lecture?.assessment);
-
   const serverId = searchParams.get("serverId") ?? "";
   const channelId = searchParams.get("channelId") ?? "";
   const memberId = searchParams.get("memberId") ?? "";
@@ -57,6 +56,12 @@ export default function LectureDetailPage() {
 
   const getLectureHref = (tab: string) =>
     `/lectures/${lectureId as string}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&tab=${encodeURIComponent(tab)}`;
+
+  useEffect(() => {
+    if (availableTabs.includes(defaultTab) && activeTab !== defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [activeTab, availableTabs, defaultTab]);
 
   useEffect(() => {
     fetchLecture();

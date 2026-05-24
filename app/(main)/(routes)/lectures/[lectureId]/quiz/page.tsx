@@ -39,17 +39,19 @@ export default function LectureQuizPage() {
 
   const buildSubmitResponse = (attempt: AssessmentAttempt): SubmitAssessmentAttemptResponse => {
     const totalQuestions = attempt.assessment?.totalQuestions ?? attempt.answers?.length ?? 0;
+    const totalPoints = attempt.assessment?.totalPoints ?? attempt.assessment?.questions?.reduce((sum, question) => sum + (question.points ?? 0), 0) ?? 0;
     const correctCount = attempt.answers?.reduce((count, answer) => count + (answer.isCorrect ? 1 : 0), 0) ?? 0;
     const finalScore = attempt.finalScore;
-    const score = totalQuestions > 0 ? (finalScore / totalQuestions) * 100 : 0;
+    const scorePercent = attempt.scorePercent ?? (totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0);
 
     return {
       success: true,
       attempt,
-      score,
+      score: scorePercent,
+      scorePercent,
       correctCount,
       totalQuestions,
-      totalPoints: attempt.assessment?.totalPoints,
+      totalPoints,
       finalScore,
     };
   };
@@ -204,7 +206,9 @@ export default function LectureQuizPage() {
               <p className="text-sm text-slate-300">
                 Submitted at {currentAttempt.submittedAt ? new Date(currentAttempt.submittedAt).toLocaleString() : "-"}
               </p>
-              <p className="text-sm text-slate-300">Final score: {currentAttempt.finalScore.toFixed(1)}</p>
+              <p className="text-sm text-slate-300">
+                Score: {currentAttempt.scorePercent.toFixed(1)}% · Final score: {currentAttempt.finalScore.toFixed(1)}
+              </p>
             </div>
 
             <Button

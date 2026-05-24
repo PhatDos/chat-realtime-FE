@@ -124,6 +124,7 @@ export interface AssessmentAttempt {
   status?: 'IN_PROGRESS' | 'SUBMITTED' | 'GRADING' | 'GRADED' | 'RETURNED' | 'EXPIRED';
   isLate?: boolean;
   autoScore: number;
+  scorePercent: number;
   teacherAdjustment: number;
   finalScore: number;
   teacherComment?: string | null;
@@ -136,10 +137,39 @@ export interface AssessmentAttempt {
   gradedBy?: MemberWithProfileResponse | null;
 }
 
+export interface ChannelLeaderboardAssignmentScore {
+  assessmentId: string;
+  scorePercent: number | null;
+  finalScore: number | null;
+  submittedAt: string | null;
+}
+
+export interface ChannelLeaderboardAssessment {
+  id: string;
+  title: string;
+  createdAt: string;
+}
+
+export interface ChannelLeaderboardEntry {
+  memberId: string;
+  member: MemberWithProfileResponse | null;
+  assignmentScores: ChannelLeaderboardAssignmentScore[];
+  totalScore: number;
+  lastActivityAt?: string | null;
+}
+
+export interface ChannelLeaderboardResponse {
+  channelId: string;
+  channelName: string;
+  assessments: ChannelLeaderboardAssessment[];
+  entries: ChannelLeaderboardEntry[];
+}
+
 export interface SubmitAssessmentAttemptResponse {
   success: boolean;
   attempt: AssessmentAttempt;
   score: number;
+  scorePercent?: number;
   correctCount: number;
   totalQuestions: number;
   totalPoints?: number;
@@ -367,7 +397,7 @@ export function useLectureService() {
       },
 
       getAssessmentLeaderboard: async (channelId: string) => {
-        return apiClient.get<AssessmentAttempt[]>(`/lectures/channel/${channelId}/leaderboard`);
+        return apiClient.get<ChannelLeaderboardResponse>(`/lectures/channel/${channelId}/leaderboard`);
       },
 
       gradeAssessmentAttempt: async (

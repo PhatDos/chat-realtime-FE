@@ -72,5 +72,6 @@ export interface QuizAttempt {
   quizId: string;
   memberId: string;
   score: number;
+  scorePercent?: number;
   createdAt: Date;
 }

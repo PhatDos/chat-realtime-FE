@@ -96,7 +96,7 @@ export default function AssessmentAttemptDetailPage() {
   const totalQuestions = attempt.assessment?.totalQuestions ?? 0;
   const totalPoints = attempt.assessment?.totalPoints ?? attempt.assessment?.questions?.reduce((sum, question) => sum + (question.points ?? 0), 0) ?? 0;
   const finalPoints = attempt.finalScore ?? 0;
-  const score = totalPoints > 0 ? (finalPoints / totalPoints) * 100 : 0;
+  const score = attempt.scorePercent ?? (totalPoints > 0 ? (finalPoints / totalPoints) * 100 : 0);
 
   const answers = attempt.answers ?? [];
 
