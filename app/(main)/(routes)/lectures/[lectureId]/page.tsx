@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useLectureData } from "@/hooks/lectures/use-lecture-data";
@@ -39,7 +39,7 @@ export default function LectureDetailPage() {
   const defaultTab = searchParams.get("tab") ?? "overview";
   const [activeTab, setActiveTab] = useState(availableTabs.includes(defaultTab) ? defaultTab : availableTabs[0]);
   const [submittingAssessmentId, setSubmittingAssessmentId] = useState<string | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
+  const [isNavigating, startNavigation] = useTransition();
   const { data: serverSidebarData } = useServerSidebarQuery({
     serverId,
     enabled: Boolean(serverId),
@@ -47,21 +47,29 @@ export default function LectureDetailPage() {
   const backHref =
     serverId && channelId
       ? `/lectures?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}${isStudentView ? "&view=student" : ""}`
-      : "/lectures";
+      : "/newsfeed";
   const channelName = serverSidebarData?.server.channels.find((channel) => channel.id === channelId)?.name;
   const assessments = lecture?.assessment ? [lecture.assessment as Assessment] : [];
   const draftAssessment = lecture?.assessment?.isDraft ? (lecture.assessment as Assessment) : null;
   const persistedAssessments = assessments.filter((assessment) => !assessment.isDraft);
   const reviewAssessment = persistedAssessments[0] ?? null;
+  const memberQuizAttempt = lecture?.assessment?.attempts?.find(
+    (attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)
+  ) ?? lecture?.assessment?.attempts?.find((attempt) => attempt.memberId === memberId) ?? null;
+  const submittedQuizAttempt = memberQuizAttempt?.submittedAt ? memberQuizAttempt : null;
+  const inProgressQuizAttempt = memberQuizAttempt && !memberQuizAttempt.submittedAt ? memberQuizAttempt : null;
+
+  const getAttemptHref = (attemptId: string) =>
+    `/lectures/${lectureId as string}/assessment-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
 
   const getLectureHref = (tab: string) =>
     `/lectures/${lectureId as string}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&tab=${encodeURIComponent(tab)}`;
 
   useEffect(() => {
-    if (availableTabs.includes(defaultTab) && activeTab !== defaultTab) {
-      setActiveTab(defaultTab);
-    }
-  }, [activeTab, availableTabs, defaultTab]);
+    const nextTab = availableTabs.includes(defaultTab) ? defaultTab : availableTabs[0];
+
+    setActiveTab((currentTab) => (availableTabs.includes(currentTab) ? currentTab : nextTab));
+  }, [availableTabs, defaultTab]);
 
   useEffect(() => {
     fetchLecture();
@@ -87,8 +95,9 @@ export default function LectureDetailPage() {
   }, [lectureId, lectureService]);
 
   const handleBackClick = () => {
-    setIsNavigating(true);
-    router.push(backHref);
+    startNavigation(() => {
+      router.push(backHref);
+    });
   };
 
   const handleGenerateQuiz = async (questionCount: number) => {
@@ -225,11 +234,19 @@ export default function LectureDetailPage() {
                     onGenerateSummary={generateSummary}
                     onGenerateFlashcards={generateFlashcards}
                     onGenerateQuiz={handleGenerateQuiz}
-                    onOpenQuiz={() => {
-                      router.push(
-                        `/lectures/${lectureId as string}/quiz?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
-                      );
+                    onQuizAction={() => {
+                      startNavigation(() => {
+                        if (submittedQuizAttempt) {
+                          router.push(getAttemptHref(submittedQuizAttempt.id));
+                          return;
+                        }
+
+                        router.push(
+                          `/lectures/${lectureId as string}/quiz?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
+                        );
+                      });
                     }}
+                    quizActionLabel={submittedQuizAttempt ? "View attempt" : inProgressQuizAttempt ? "Resume quiz" : "Do quiz"}
                   />
                 </TabsContent>
 

@@ -354,7 +354,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
                   Saving...
                 </>
               ) : (
-                "Create assessment"
+                "Create and Publish"
               )}
             </Button>
           </div>

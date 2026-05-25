@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Quiz, QuizOption, SubmitAssessmentAttemptResponse } from "@/services/lectures/lecture.service";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AssessmentAttempt, StudentQuizAssessment, StudentQuizOption, SubmitAssessmentAttemptResponse } from "@/services/lectures/lecture.service";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -10,13 +10,27 @@ import { Loader2 } from "lucide-react";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
 
 interface QuizTakerProps {
-  quiz: Quiz;
+  quiz: StudentQuizAssessment;
+  attempt?: Pick<AssessmentAttempt, "startedAt" | "status"> | null;
   onSubmit: (answers: Record<string, string>) => Promise<SubmitAssessmentAttemptResponse>;
   onSubmitted?: (response: SubmitAssessmentAttemptResponse) => void;
   isSubmitting: boolean;
 }
 
-export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTakerProps) {
+const formatTimeLeft = (remainingMs: number) => {
+  const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+export function QuizTaker({ quiz, attempt, onSubmit, onSubmitted, isSubmitting }: QuizTakerProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -25,6 +39,59 @@ export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTak
     correctCount: number;
     totalQuestions: number;
   } | null>(null);
+  const autoSubmitTriggeredRef = useRef(false);
+
+  const deadlineMs = attempt?.startedAt && quiz.durationMinutes
+    ? new Date(attempt.startedAt).getTime() + quiz.durationMinutes * 60 * 1000
+    : null;
+  const [remainingMs, setRemainingMs] = useState<number | null>(deadlineMs ? Math.max(deadlineMs - Date.now(), 0) : null);
+
+  const submitQuiz = useCallback(async () => {
+    if (submitted || isSubmitting) {
+      return;
+    }
+
+    const response = await onSubmit(answers);
+
+    if (onSubmitted) {
+      onSubmitted(response);
+      return;
+    }
+
+    setResult({
+      score: response.score,
+      correctCount: response.correctCount,
+      totalQuestions: response.totalQuestions,
+    });
+    setSubmitted(true);
+  }, [answers, isSubmitting, onSubmit, onSubmitted, submitted]);
+
+  useEffect(() => {
+    autoSubmitTriggeredRef.current = false;
+
+    if (!deadlineMs || submitted || result) {
+      setRemainingMs(deadlineMs ? Math.max(deadlineMs - Date.now(), 0) : null);
+      return;
+    }
+
+    const updateRemaining = () => {
+      const nextRemaining = deadlineMs - Date.now();
+      setRemainingMs(Math.max(nextRemaining, 0));
+
+      if (nextRemaining <= 0 && !autoSubmitTriggeredRef.current && !isSubmitting) {
+        autoSubmitTriggeredRef.current = true;
+        void submitQuiz();
+      }
+    };
+
+    updateRemaining();
+
+    const timerId = window.setInterval(updateRemaining, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [deadlineMs, isSubmitting, result, submitQuiz, submitted]);
 
   if (!quiz.questions || quiz.questions.length === 0) {
     return <div className="text-center text-slate-300">No questions</div>;
@@ -55,11 +122,7 @@ export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTak
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const selectedAnswer = answers[currentQuestion.id];
 
-  const selectedOption = currentQuestion.options.find((o) => o.id === selectedAnswer);
   const isAnswered = !!selectedAnswer;
-  const isSelectedCorrect = !!selectedOption && selectedOption.isCorrect;
-  const correctOptionIndex = currentQuestion.options.findIndex((o) => o.isCorrect);
-  const correctOptionLetter = correctOptionIndex >= 0 ? String.fromCharCode(65 + correctOptionIndex) : null;
 
   const handleSelectAnswer = (optionId: string) => {
     setAnswers((prev) => ({
@@ -80,28 +143,31 @@ export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTak
     }
   };
 
-  const handleSubmit = async () => {
-    const response = await onSubmit(answers);
-
-    if (onSubmitted) {
-      onSubmitted(response);
-      return;
-    }
-
-    setResult({
-      score: response.score,
-      correctCount: response.correctCount,
-      totalQuestions: response.totalQuestions,
-    });
-    setSubmitted(true);
-  };
-
   const allAnswered = quiz.questions!.length === Object.keys(answers).length;
+  const isTimeRunningOut = remainingMs !== null && remainingMs <= 5 * 60 * 1000;
   return (
     <>
       <LoadingOverlay isLoading={isSubmitting} text="Submitting..." />
 
       <div className="space-y-6">
+        {deadlineMs ? (
+          <Card
+            className={`flex items-center justify-between gap-4 border px-4 py-3 rounded-2xl ${isTimeRunningOut ? "border-amber-400/30 bg-amber-400/10" : "border-cyan-400/20 bg-cyan-400/10"}`}
+          >
+            <div>
+              <div className={`text-xs uppercase tracking-[0.24em] ${isTimeRunningOut ? "text-amber-200/80" : "text-cyan-200/80"}`}>
+                Time remaining
+              </div>
+              <div className={`text-2xl font-bold ${isTimeRunningOut ? "text-amber-100" : "text-cyan-100"}`}>
+                {remainingMs !== null ? formatTimeLeft(remainingMs) : "--:--"}
+              </div>
+            </div>
+            <div className={`text-sm ${isTimeRunningOut ? "text-amber-100/80" : "text-cyan-100/80"}`}>
+              {remainingMs !== null && remainingMs <= 0 ? "Submitting now..." : `Started at ${attempt?.startedAt ? new Date(attempt.startedAt).toLocaleString() : "-"}`}
+            </div>
+          </Card>
+        ) : null}
+
         <div className="text-sm text-slate-300">
           Question {currentQuestionIndex + 1} of {quiz.questions!.length}
         </div>
@@ -114,7 +180,7 @@ export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTak
 
             <RadioGroup value={selectedAnswer || ""} onValueChange={handleSelectAnswer}>
               <div className="space-y-3">
-                {currentQuestion.options.map((option: QuizOption) => {
+                {currentQuestion.options.map((option: StudentQuizOption) => {
                   let optionClass = 'flex items-center space-x-2 p-3 border border-white/10 rounded-lg cursor-pointer transition-colors';
 
                   // add hover styles when the question hasn't been answered yet
@@ -124,15 +190,13 @@ export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTak
 
                   if (isAnswered) {
                     if (option.id === selectedAnswer) {
-                      optionClass += option.isCorrect ? ' border-2 border-green-500 bg-green-50/30' : ' border-2 border-red-500 bg-red-50/30';
-                    } else if (option.isCorrect) {
-                      optionClass += ' border-2 border-green-200 bg-green-50/20';
+                      optionClass += ' border-2 border-cyan-400/40 bg-cyan-400/10';
                     }
                   }
 
                   return (
                     <div key={option.id} className={optionClass}>
-                      <RadioGroupItem value={option.id} id={option.id} disabled={isAnswered} />
+                      <RadioGroupItem value={option.id} id={option.id} />
                       <Label htmlFor={option.id} className="flex-1 cursor-pointer text-slate-200">
                         {option.optionText}
                       </Label>
@@ -145,20 +209,6 @@ export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTak
 
           {isAnswered && (
             <div className="space-y-2">
-              <div className={isSelectedCorrect ? 'p-3 rounded bg-green-50 text-green-700 font-medium' : 'rounded text-red-700 font-medium'}>
-                {isSelectedCorrect ? 'Correct' : 'Incorrect'}
-              </div>
-
-              {!isSelectedCorrect && correctOptionLetter && (
-                <div className="text-sm text-green-400 font-medium">Correct answer: {correctOptionLetter}</div>
-              )}
-
-              {currentQuestion.explanation && (
-                <div className="p-4 bg-cyan-400/10 rounded-lg">
-                  <div className="text-sm font-medium mb-2 text-white">Explanation:</div>
-                  <div className="text-sm text-slate-200">{currentQuestion.explanation}</div>
-                </div>
-              )}
             </div>
           )}
         </Card>
@@ -179,7 +229,9 @@ export function QuizTaker({ quiz, onSubmit, onSubmitted, isSubmitting }: QuizTak
             </Button>
           ) : (
             <Button
-              onClick={handleSubmit}
+              onClick={() => {
+                void submitQuiz();
+              }}
               disabled={!allAnswered || isSubmitting}
               className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
             >

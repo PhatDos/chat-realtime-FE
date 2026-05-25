@@ -20,7 +20,7 @@ const ServerIdLayout = async ({ children, params }: ServerIdLayoutProps) => {
   } catch (e: unknown) {
     const status = isAxiosError(e) ? e.response?.status : undefined;
     if (status === 401) redirect("/sign-in");
-    redirect("/setup"); // 403 = not a member, 404 = server gone
+    redirect("/newsfeed"); // 403 = not a member, 404 = server gone
   }
 
   return (

@@ -20,7 +20,7 @@ export default function NotFound() {
       </div>
 
       <Button asChild className="bg-indigo-500 hover:bg-indigo-500/90 text-white mt-8">
-        <Link href="/setup">
+        <Link href="/newsfeed">
           Return Home
         </Link>
       </Button>

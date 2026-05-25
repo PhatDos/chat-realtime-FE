@@ -19,13 +19,13 @@ const ChannelIdPage = async ({ params }: ChannelIdPageProps) => {
   const [channelRes, accessRes] = await Promise.all([
     getChannel(serverId, channelId),
     getServerMe(serverId),
-  ]).catch(() => redirect("/setup"));
+  ]).catch(() => redirect("/newsfeed"));
 
   const channel = channelRes;
   const member = accessRes?.member;
 
   if (!channel || !member) {
-    redirect("/setup");
+    redirect("/newsfeed");
   }
 
   return (

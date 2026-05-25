@@ -87,6 +87,44 @@ export interface AssessmentQuestion {
   answers?: AssessmentAnswer[];
 }
 
+export interface StudentQuizOption {
+  id: string;
+  questionId: string;
+  order: number;
+  optionText: string;
+}
+
+export interface StudentQuizQuestion {
+  id: string;
+  assessmentId: string;
+  order: number;
+  questionText: string;
+  type: 'MULTIPLE_CHOICE' | 'MULTI_SELECT' | 'TRUE_FALSE' | 'ESSAY';
+  points: number;
+  options: StudentQuizOption[];
+}
+
+export interface StudentQuiz {
+  id: string;
+  lectureId?: string | null;
+  channelId: string;
+  createdById: string;
+  title: string;
+  description?: string | null;
+  type: 'QUIZ' | 'ASSIGNMENT';
+  generatedByAI: boolean;
+  status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
+  totalQuestions: number;
+  totalPoints: number;
+  durationMinutes?: number | null;
+  allowLateSubmission: boolean;
+  expiresAt?: string | null;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  questions: StudentQuizQuestion[];
+}
+
 export interface AssessmentOption {
   id: string;
   questionId: string;
@@ -114,6 +152,7 @@ export type Quiz = Assessment;
 export type QuizQuestion = AssessmentQuestion;
 export type QuizOption = AssessmentOption;
 export type QuizAttempt = AssessmentAttempt;
+export type StudentQuizAssessment = StudentQuiz;
 
 export interface AssessmentAttempt {
   id: string;
@@ -246,6 +285,10 @@ export function useLectureService() {
         return apiClient.get<Lecture>(`/lectures/${lectureId}`);
       },
 
+      getStudentQuiz: async (lectureId: string) => {
+        return apiClient.get<StudentQuiz>(`/lectures/${lectureId}/quiz`);
+      },
+
       getLectureFiles: async (lectureId: string) => {
         return apiClient.get<LectureFileRow[]>(`/lectures/${lectureId}/files`);
       },
@@ -299,6 +342,12 @@ export function useLectureService() {
 
       getAssessmentAttempt: async (attemptId: string) => {
         return apiClient.get<AssessmentAttempt>(`/lectures/assessment/attempts/${attemptId}`);
+      },
+
+      startAssessmentAttempt: async (assessmentId: string, memberId: string) => {
+        return apiClient.post<AssessmentAttempt>(`/lectures/assessment/${assessmentId}/attempt/start`, {
+          memberId,
+        });
       },
 
       /**

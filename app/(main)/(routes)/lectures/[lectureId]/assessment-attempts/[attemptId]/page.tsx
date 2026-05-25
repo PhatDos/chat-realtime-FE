@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
@@ -28,7 +28,11 @@ interface QuestionSnapshot {
 export default function AssessmentAttemptDetailPage() {
   const { lectureId, attemptId } = useParams<{ lectureId: string; attemptId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const lectureService = useLectureService();
+  const serverId = searchParams.get("serverId") ?? "";
+  const channelId = searchParams.get("channelId") ?? "";
+  const memberId = searchParams.get("memberId") ?? "";
 
   const [attempt, setAttempt] = useState<AssessmentAttempt | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,8 +62,11 @@ export default function AssessmentAttemptDetailPage() {
   }, [attemptId, lectureService]);
 
   const backHref = useMemo(
-    () => `/lectures/${lectureId}/assessment-editor?assessmentId=${attempt?.assessmentId ?? ""}`,
-    [attempt?.assessmentId, lectureId],
+    () =>
+      serverId && channelId && memberId
+        ? `/lectures/${lectureId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
+        : `/lectures/${lectureId}`,
+    [channelId, lectureId, memberId, serverId],
   );
 
   const handleBack = () => {
@@ -132,7 +139,7 @@ export default function AssessmentAttemptDetailPage() {
             className="group border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white transition-all duration-200 disabled:opacity-50"
           >
             <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
-            Back to editor
+            Back to lecture
           </Button>
 
           <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-medium text-cyan-200">

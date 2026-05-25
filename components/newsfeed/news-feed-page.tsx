@@ -1,18 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Home,
-  MoreHorizontal,
-  Search,
-  Users,
-} from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 
 import { CreatePostBox } from "./create-post-box";
 import { FeedList } from "./feed-list";
 import { FriendList } from "./friend-list";
+import { NewsFeedSearchBar } from "./news-feed-search-bar";
 import { NotificationBell } from "./notification-bell";
 import { FeedAuthor, FeedPost } from "./types";
+import { UserButton } from "@clerk/nextjs";
 
 interface NewsFeedPageProps {
   currentUser: FeedAuthor;
@@ -25,26 +22,20 @@ export const NewsFeedPage = ({ currentUser }: NewsFeedPageProps) => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(236,72,153,0.10),_transparent_22%),linear-gradient(180deg,_#fafafa_0%,_#f4f4f5_46%,_#e4e4e7_100%)] text-zinc-900 dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(168,85,247,0.16),_transparent_24%),linear-gradient(180deg,_#0a0a0b_0%,_#111113_45%,_#18181b_100%)] dark:text-zinc-50">
       <header className="sticky top-0 z-40 border-b border-white/60 bg-white/75 backdrop-blur-xl dark:border-white/10 dark:bg-[#111113]/75">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-
-          <div className="relative hidden flex-1 max-w-xl md:block">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-            <input
-              className="h-11 w-full rounded-full border border-zinc-200/80 bg-zinc-50/90 pl-11 pr-4 text-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-300 focus:bg-white focus:ring-4 focus:ring-zinc-950/5 dark:border-white/10 dark:bg-white/5 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:bg-white/8 dark:focus:ring-white/10"
-              placeholder="Search friendly"
-            />
+          <div className="flex flex-1 min-w-0 justify-center pl-4 lg:pl-8">
+            <NewsFeedSearchBar />
           </div>
 
-          <nav className="ml-auto flex items-center gap-1.5">
-            <button className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white">
-              <Home className="h-5 w-5" />
-            </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white">
-              <Users className="h-5 w-5" />
-            </button>
+          <nav className="ml-auto flex items-center gap-3">
             <NotificationBell />
-            <div className="ml-1 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-zinc-200 ring-2 ring-zinc-950/5 dark:border-white/10 dark:bg-zinc-800 dark:ring-white/10">
-              <img src={currentUser.imageUrl} alt="" className="h-full w-full object-cover" />
-            </div>
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: "h-[38px] w-[38px]",
+                  userButtonPopoverCard: { pointerEvents: "initial" },
+                },
+              }}
+            />
           </nav>
         </div>
       </header>

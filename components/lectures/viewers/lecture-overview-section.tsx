@@ -6,8 +6,9 @@ import { QuizGenerator } from "@/components/lectures/generators/quiz-generator";
 import type { LectureFileRow } from "@/services/lectures/lecture.service";
 import type { Lecture } from "@/services/lectures/lecture.service";
 import { SummaryTone } from "@/types/lecture";
-import { FileText } from "lucide-react";
+import { CalendarDays, Clock3, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface LectureOverviewSectionProps {
   lecture: Lecture;
@@ -22,7 +23,8 @@ interface LectureOverviewSectionProps {
   onGenerateSummary: (tone: SummaryTone) => Promise<void>;
   onGenerateFlashcards: (count: number) => Promise<void>;
   onGenerateQuiz: (questionCount: number) => Promise<void | unknown>;
-  onOpenQuiz?: () => void;
+  onQuizAction?: () => void;
+  quizActionLabel?: string;
 }
 
 export function LectureOverviewSection({
@@ -38,7 +40,8 @@ export function LectureOverviewSection({
   onGenerateSummary,
   onGenerateFlashcards,
   onGenerateQuiz,
-  onOpenQuiz,
+  onQuizAction,
+  quizActionLabel = "Do quiz",
 }: LectureOverviewSectionProps) {
   return (
     <div className="space-y-6 mt-0">
@@ -124,10 +127,55 @@ export function LectureOverviewSection({
       ) : isStudentView ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-6 text-sm text-slate-300 space-y-4">
           <p>Student mode is view-only. Summary and flashcards are available here.</p>
-          {hasQuiz && onOpenQuiz ? (
-            <Button type="button" onClick={onOpenQuiz} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-              Open quiz
-            </Button>
+          {hasQuiz ? (
+            <Card className="border border-white/10 bg-slate-950/40 rounded-2xl p-5 space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{lecture.assessment?.title ?? "Quiz"}</h3>
+                    <p className="text-sm text-slate-400">
+                      {lecture.assessment?.type ?? "QUIZ"} · {lecture.assessment?.status ?? "PUBLISHED"} · {lecture.assessment?.totalQuestions ?? 0} questions
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
+                    Ready
+                  </div>
+                </div>
+
+                {lecture.assessment?.description ? (
+                  <p className="text-sm text-slate-300">{lecture.assessment.description}</p>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Deadline</div>
+                  <div className="mt-1 flex items-center gap-2 text-sm text-slate-200">
+                    <CalendarDays className="h-4 w-4 text-cyan-400" />
+                    {lecture.assessment?.expiresAt ? new Date(lecture.assessment.expiresAt).toLocaleString() : "No deadline"}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Duration</div>
+                  <div className="mt-1 flex items-center gap-2 text-sm text-slate-200">
+                    <Clock3 className="h-4 w-4 text-cyan-400" />
+                    {lecture.assessment?.durationMinutes ? `${lecture.assessment.durationMinutes} minutes` : "No time limit"}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Late submission</div>
+                  <div className="mt-1 text-sm text-slate-200">
+                    {lecture.assessment?.allowLateSubmission ? "Allowed by owner" : "Not allowed"}
+                  </div>
+                </div>
+              </div>
+
+              {onQuizAction ? (
+                <Button type="button" onClick={onQuizAction} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
+                  {quizActionLabel}
+                </Button>
+              ) : null}
+            </Card>
           ) : null}
         </div>
       ) : (

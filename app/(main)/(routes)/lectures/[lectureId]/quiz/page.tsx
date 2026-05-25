@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { isAxiosError } from "axios";
-import { ArrowLeft, CalendarDays, Clock3, Loader2, ShieldAlert } from "lucide-react";
-import { useLectureData } from "@/hooks/lectures/use-lecture-data";
+import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { useLectureService } from "@/services/lectures/lecture.service";
-import type { AssessmentAttempt, SubmitAssessmentAttemptResponse } from "@/services/lectures/lecture.service";
+import type { AssessmentAttempt, StudentQuizAssessment } from "@/services/lectures/lecture.service";
 import { QuizTaker } from "@/components/lectures/viewers/quiz-taker";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
 import { Button } from "@/components/ui/button";
@@ -19,80 +18,119 @@ export default function LectureQuizPage() {
   const searchParams = useSearchParams();
   const lectureService = useLectureService();
   const { toast } = useToast();
-  const { lecture, loading, fetchLecture } = useLectureData(lectureId as string);
+  const isMountedRef = useRef(true);
+  const [quiz, setQuiz] = useState<StudentQuizAssessment | null>(null);
+  const [loadingQuiz, setLoadingQuiz] = useState(true);
   const [isSubmittingAssessmentAttempt, setIsSubmittingAssessmentAttempt] = useState(false);
+  const [startedAttempt, setStartedAttempt] = useState<AssessmentAttempt | null>(null);
+  const [isStartingAttempt, setIsStartingAttempt] = useState(false);
   const serverId = searchParams.get("serverId") ?? "";
   const channelId = searchParams.get("channelId") ?? "";
   const memberId = searchParams.get("memberId") ?? "";
   const backHref =
     serverId && channelId
       ? `/lectures/${lectureId as string}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
-      : `/lectures/${lectureId as string}`;
-  const assessment = lecture?.assessment ?? null;
-  const currentAttempt = useMemo(() => {
-    if (!assessment || !memberId) {
-      return null;
-    }
-
-    return assessment.attempts?.find((attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)) ?? null;
-  }, [assessment, memberId]);
-
-  const buildSubmitResponse = (attempt: AssessmentAttempt): SubmitAssessmentAttemptResponse => {
-    const totalQuestions = attempt.assessment?.totalQuestions ?? attempt.answers?.length ?? 0;
-    const totalPoints = attempt.assessment?.totalPoints ?? attempt.assessment?.questions?.reduce((sum, question) => sum + (question.points ?? 0), 0) ?? 0;
-    const correctCount = attempt.answers?.reduce((count, answer) => count + (answer.isCorrect ? 1 : 0), 0) ?? 0;
-    const finalScore = attempt.finalScore;
-    const scorePercent = attempt.scorePercent ?? (totalPoints > 0 ? (finalScore / totalPoints) * 100 : 0);
-
-    return {
-      success: true,
-      attempt,
-      score: scorePercent,
-      scorePercent,
-      correctCount,
-      totalQuestions,
-      totalPoints,
-      finalScore,
-    };
-  };
+      : "/newsfeed";
+  const currentAttempt = startedAttempt;
+  const submittedAttempt = currentAttempt?.submittedAt ? currentAttempt : null;
 
   const getAttemptHref = (attemptId: string) =>
     `/lectures/${lectureId as string}/assessment-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleBack = () => {
     router.push(backHref);
   };
 
+  useEffect(() => {
+    const loadQuiz = async () => {
+      setLoadingQuiz(true);
+
+      try {
+        const data = await lectureService.getStudentQuiz(lectureId as string);
+
+        if (isMountedRef.current) {
+          setQuiz(data);
+        }
+      } catch (error) {
+        if (isMountedRef.current) {
+          toast({
+            title: "Quiz not found",
+            description: "Please go back and open the quiz again.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setLoadingQuiz(false);
+        }
+      }
+    };
+
+    void loadQuiz();
+  }, [lectureId, lectureService, toast]);
+
+  useEffect(() => {
+    const ensureAttempt = async () => {
+      if (!quiz || !memberId || currentAttempt || isStartingAttempt) {
+        return;
+      }
+
+      setIsStartingAttempt(true);
+
+      try {
+        const attempt = await lectureService.startAssessmentAttempt(quiz.id, memberId);
+
+        if (isMountedRef.current) {
+          setStartedAttempt(attempt);
+        }
+      } catch (error) {
+        if (isMountedRef.current) {
+          toast({
+            title: "Unable to start quiz",
+            description: "Please refresh the page and try again.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsStartingAttempt(false);
+        }
+      }
+    };
+
+    void ensureAttempt();
+  }, [currentAttempt, isStartingAttempt, lectureService, memberId, quiz, toast]);
+
   const handleSubmit = async (answers: Record<string, string>) => {
-    if (!assessment) {
+    if (!quiz) {
       throw new Error("Assessment not found");
     }
 
     setIsSubmittingAssessmentAttempt(true);
 
     try {
-      return await lectureService.submitAssessmentAttempt(assessment.id, memberId, answers);
+      return await lectureService.submitAssessmentAttempt(quiz.id, memberId, answers);
     } catch (error) {
       if (isAxiosError(error) && error.response?.status === 409) {
-        const refreshedLecture = await lectureService.getLectureById(lectureId as string);
-        const refreshedAttempt = refreshedLecture.assessment?.attempts?.find(
-          (attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)
-        );
-
-        if (refreshedAttempt) {
-          toast({
-            title: "Already submitted",
-            description: "You have already completed this quiz. Opening your attempt.",
-          });
-          router.push(getAttemptHref(refreshedAttempt.id));
-          return buildSubmitResponse(refreshedAttempt);
-        }
+        toast({
+          title: "Already submitted",
+          description: "You have already completed this quiz.",
+        });
+        router.push(backHref);
       }
 
       if (isAxiosError(error) && error.response?.status === 403) {
         toast({
           title: "Assessment expired",
-          description: "This quiz can no longer be submitted.",
+          description: "This quiz can no longer be submitted because the deadline has passed.",
         });
       }
 
@@ -102,11 +140,7 @@ export default function LectureQuizPage() {
     }
   };
 
-  useEffect(() => {
-    fetchLecture();
-  }, [fetchLecture, lectureId]);
-
-  if (loading) {
+  if (loadingQuiz) {
     return (
       <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -117,7 +151,7 @@ export default function LectureQuizPage() {
     );
   }
 
-  if (!lecture || !assessment) {
+  if (!quiz) {
     return (
       <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-6">
         <Card className="border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/30 backdrop-blur-xl">
@@ -127,9 +161,7 @@ export default function LectureQuizPage() {
     );
   }
 
-  const deadlineLabel = assessment.expiresAt ? new Date(assessment.expiresAt).toLocaleString() : "No deadline";
-  const durationLabel = assessment.durationMinutes ? `${assessment.durationMinutes} minutes` : "No time limit";
-  const isExpired = Boolean(assessment.expiresAt && new Date(assessment.expiresAt) < new Date());
+  const isExpired = Boolean(!currentAttempt && quiz.expiresAt && new Date(quiz.expiresAt) < new Date());
 
   return (
     <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
@@ -152,76 +184,58 @@ export default function LectureQuizPage() {
           </div>
         </div>
 
-        <Card className="border border-white/10 bg-white/5 p-6 rounded-2xl space-y-4">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-white">{assessment.title}</h1>
-            <p className="text-sm text-slate-400">
-              {assessment.type} · {assessment.status} · {assessment.totalQuestions} questions
-            </p>
-            {assessment.description ? <p className="text-sm text-slate-300">{assessment.description}</p> : null}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Deadline</div>
-              <div className="mt-1 flex items-center gap-2 text-sm text-slate-200">
-                <CalendarDays className="h-4 w-4 text-cyan-400" />
-                {deadlineLabel}
-              </div>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Duration</div>
-              <div className="mt-1 flex items-center gap-2 text-sm text-slate-200">
-                <Clock3 className="h-4 w-4 text-cyan-400" />
-                {durationLabel}
-              </div>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Late submission</div>
-              <div className="mt-1 text-sm text-slate-200">
-                {assessment.allowLateSubmission ? "Allowed by owner" : "Not allowed"}
-              </div>
-            </div>
-          </div>
+        <Card className="border border-white/10 bg-white/5 p-6 rounded-2xl space-y-2">
+          <h1 className="text-3xl font-bold text-white">{quiz.title}</h1>
+          <p className="text-sm text-slate-400">
+            {quiz.type} · {quiz.status} · {quiz.totalQuestions} questions
+          </p>
+          {quiz.description ? <p className="text-sm text-slate-300">{quiz.description}</p> : null}
         </Card>
 
-        {isExpired ? (
+        {isStartingAttempt && !currentAttempt ? (
+          <Card className="border border-white/10 bg-white/5 p-6 rounded-2xl space-y-3">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+              <p className="text-sm font-medium text-slate-200">Starting quiz session...</p>
+            </div>
+            <p className="text-sm text-slate-300">The timer is being initialized from the server.</p>
+          </Card>
+        ) : isExpired ? (
           <Card className="border border-amber-400/20 bg-amber-400/5 p-6 rounded-2xl space-y-3">
             <p className="text-sm font-medium text-amber-200">This quiz has expired</p>
             <p className="text-sm text-slate-300">The deadline has passed, so new submissions are blocked.</p>
-            {currentAttempt ? (
+            {submittedAttempt ? (
               <Button
                 type="button"
                 className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-                onClick={() => router.push(getAttemptHref(currentAttempt.id))}
+                onClick={() => router.push(getAttemptHref(submittedAttempt.id))}
               >
                 View your attempt
               </Button>
             ) : null}
           </Card>
-        ) : currentAttempt ? (
+        ) : submittedAttempt ? (
           <Card className="border border-emerald-400/20 bg-emerald-400/5 p-6 rounded-2xl space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-emerald-200">You already submitted this quiz</p>
+              <p className="text-sm text-slate-300">Submitted at {submittedAttempt.submittedAt ? new Date(submittedAttempt.submittedAt).toLocaleString() : "-"}</p>
               <p className="text-sm text-slate-300">
-                Submitted at {currentAttempt.submittedAt ? new Date(currentAttempt.submittedAt).toLocaleString() : "-"}
-              </p>
-              <p className="text-sm text-slate-300">
-                Score: {currentAttempt.scorePercent.toFixed(1)}% · Final score: {currentAttempt.finalScore.toFixed(1)}
+                Score: {submittedAttempt.scorePercent.toFixed(1)}% · Final score: {submittedAttempt.finalScore.toFixed(1)}
               </p>
             </div>
 
             <Button
               type="button"
               className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-              onClick={() => router.push(getAttemptHref(currentAttempt.id))}
+              onClick={() => router.push(getAttemptHref(submittedAttempt.id))}
             >
               View attempt
             </Button>
           </Card>
         ) : (
           <QuizTaker
-            quiz={assessment}
+            quiz={quiz}
+            attempt={currentAttempt}
             onSubmit={handleSubmit}
             onSubmitted={(response) => {
               router.push(getAttemptHref(response.attempt.id));
