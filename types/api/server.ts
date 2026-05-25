@@ -6,12 +6,16 @@ import type {
   MemberWithProfileResponse,
 } from "@/types/api/member";
 
+export type ServerVisibility = "PUBLIC" | "PRIVATE";
+
 export interface ServerResponse {
   id: string;
   name: string;
   imageUrl: string;
   inviteCode: string;
   profileId: string;
+  visibility: ServerVisibility;
+  memberCount: number;
   generalChannelId: string | null;
   createdAt: ApiDateTime;
   updatedAt: ApiDateTime;
@@ -33,6 +37,19 @@ export interface ServerSummary {
   name: string;
   imageUrl: string;
   unreadCount?: number;
+}
+
+export interface ServerDiscoverySummary {
+  id: string;
+  name: string;
+  imageUrl: string;
+  inviteCode: string;
+  visibility: ServerVisibility;
+  memberCount: number;
+}
+
+export interface ServerSearchResponse {
+  items: ServerDiscoverySummary[];
 }
 export interface ServerPaginationResponse {
   data: ServerSummary[];

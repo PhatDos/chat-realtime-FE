@@ -13,8 +13,16 @@ export type PostsPageResponse = {
   nextCursor: string | null;
 };
 
+export type SearchPostsResponse = {
+  items: FeedPost[];
+};
+
 export const createPost = async (api: ClientApi, payload: CreatePostInput) => {
   return api.post<FeedPost>("/posts", payload);
+};
+
+export const getPost = async (api: ClientApi, postId: string) => {
+  return api.get<FeedPost>(`/posts/${postId}`);
 };
 
 export const getUserPosts = async (
@@ -25,6 +33,19 @@ export const getUserPosts = async (
   return api.get<PostsPageResponse>(`/posts`, {
     params: {
       cursor: cursor ?? undefined,
+      limit,
+    },
+  });
+};
+
+export const searchPosts = async (
+  api: ClientApi,
+  query: string,
+  limit: number = 20,
+) => {
+  return api.get<SearchPostsResponse>(`/posts/search`, {
+    params: {
+      q: query,
       limit,
     },
   });

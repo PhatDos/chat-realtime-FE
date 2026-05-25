@@ -30,10 +30,19 @@ import { useApiClient } from '@/hooks/use-api-client'
 import { useQueryClient } from '@tanstack/react-query'
 import { createServer } from '@/services/servers/servers-service'
 import { invalidateServers } from '@/lib/query/server-cache'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Globe, Lock } from 'lucide-react'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Server name is required'),
-  imageUrl: z.string().min(1, 'Server image is required')
+  imageUrl: z.string().min(1, 'Server image is required'),
+  visibility: z.enum(['PUBLIC', 'PRIVATE'])
 })
 
 export const CreateServerModal = () => {
@@ -45,11 +54,12 @@ export const CreateServerModal = () => {
 
   const isModalOpen = isOpen && type === 'createServer'
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      imageUrl: ''
+      imageUrl: '',
+      visibility: 'PRIVATE' as const,
     }
   })
 
@@ -84,7 +94,7 @@ export const CreateServerModal = () => {
 
   return (
     <Dialog open={isModalOpen} onOpenChange={handleClose}>
-      <DialogContent className='bg-white text-black p-0 overflow-hidden'>
+      <DialogContent className='bg-white text-black p-0 overflow-visible'>
         <DialogHeader className='pt-8 px-6'>
           <DialogTitle className='text-2xl text-center font-bold'>
             Create your server
@@ -95,7 +105,7 @@ export const CreateServerModal = () => {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-            <div className='space-y-8 px-6'>
+            <div className='space-y-2 px-6'>
               <div className='flex justify-center px-6'>
                 <FormField
                   control={form.control}
@@ -113,29 +123,69 @@ export const CreateServerModal = () => {
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name='name'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='uppercase pt-3 text-xs font-bold text-zinc-500 dark:text-secondary-500'>
-                      Server name
-                    </FormLabel>
-                    <FormControl>
-                      <Input
+              <div className='grid gap-2 md:grid-cols-2 mt-8'>
+                <FormField
+                  control={form.control}
+                  name='name'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='uppercase pt-3 text-xs font-bold text-zinc-500 dark:text-secondary-500'>
+                        Server name
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          disabled={isLoading}
+                          className='bg-zinc-300/50 border-2 focus-visible:ring-0 text-black focus-visible:ring-offset-0 placeholder:italic placeholder:text-sm placeholder:text-zinc-500'
+                          placeholder='Enter server name'
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className='text-xs italic text-red-500' />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='visibility'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='uppercase pt-3 text-xs font-bold text-zinc-500 dark:text-secondary-500'>
+                        Visibility
+                      </FormLabel>
+                      <Select
                         disabled={isLoading}
-                        className='bg-zinc-300/50 border-2
-                                                focus-visible:ring-0 text-black
-                                                focus-visible:ring-offset-0
-                                                placeholder:italic placeholder:text-sm placeholder:text-zinc-500'
-                        placeholder='Enter server name'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='text-xs italic text-red-500' />
-                  </FormItem>
-                )}
-              />
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className='w-full bg-zinc-300/50 border-2 focus-visible:ring-0 text-black focus-visible:ring-offset-0'>
+                            <SelectValue placeholder='Select visibility' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent
+                          className='z-[60] bg-white dark:bg-[#2b2d31]'
+                          sideOffset={8}
+                        >
+                          <SelectItem value='PRIVATE' className='cursor-pointer'>
+                            <div className='flex items-center gap-1.5 whitespace-nowrap'>
+                              <Lock className='h-3.5 w-3.5' />
+                              <span>Private</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value='PUBLIC' className='cursor-pointer'>
+                            <div className='flex items-center gap-1.5 whitespace-nowrap'>
+                              <Globe className='h-3.5 w-3.5' />
+                              <span>Public</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className='text-xs italic text-red-500' />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
             <DialogFooter className='bg-gray-300 px-6 py-2 flex flex-row justify-center'>
               <Button

@@ -41,7 +41,7 @@ export const NewsFeedPage = ({ currentUser }: NewsFeedPageProps) => {
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,0.9fr)]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)]">
           <main className="space-y-6">
             <section className="rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm dark:border-white/10 dark:bg-[#1c1c20]/85">
               <div className="flex items-center gap-3">
@@ -65,7 +65,7 @@ export const NewsFeedPage = ({ currentUser }: NewsFeedPageProps) => {
             <FeedList profileId={currentUser.id} newPost={latestCreatedPost} />
           </main>
 
-          <aside className="hidden lg:block">
+          <aside className="hidden lg:!block">
             <div className="sticky top-20 space-y-6">
               <FriendList />
             </div>

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2} from "lucide-react";
 import { useLectureData } from "@/hooks/lectures/use-lecture-data";
 import { AssessmentEditor } from "@/components/lectures/viewers/assessment-editor";
 import { LoadingOverlay } from "@/components/common/loading-overlay";

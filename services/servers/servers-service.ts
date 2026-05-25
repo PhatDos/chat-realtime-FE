@@ -1,8 +1,11 @@
 import type { ClientApi } from "@/services/client-api";
 import type {
   CurrentProfileResponse,
+  ServerDiscoverySummary,
+  ServerSearchResponse,
   ServerPaginationResponse,
   ServerResponse,
+  ServerVisibility,
   ServerSummary,
   ServerUnreadResponse,
 } from "@/types/api/server";
@@ -23,15 +26,30 @@ export const getServers = async (
 
 export const createServer = async (
   api: ClientApi,
-  values: { name: string; imageUrl: string },
+  values: { name: string; imageUrl: string; visibility?: ServerVisibility },
 ) => {
   return api.post<ServerResponse>("/servers", values);
+};
+
+export const searchServers = async (
+  api: ClientApi,
+  query: string,
+  limit: number = 20,
+) => {
+  const items = await api.get<ServerDiscoverySummary[]>(`/servers/search`, {
+    params: {
+      q: query,
+      limit,
+    },
+  });
+
+  return { items } satisfies ServerSearchResponse;
 };
 
 export const updateServer = async (
   api: ClientApi,
   serverId: string,
-  values: { name: string; imageUrl: string },
+  values: { name: string; imageUrl: string; visibility?: ServerVisibility },
 ) => {
   return api.patch<ServerResponse>(`/servers/${serverId}`, values);
 };
