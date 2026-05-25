@@ -38,17 +38,17 @@ export function Header () {
           <div className='flex items-center gap-2 cursor-pointer'>
             <MessageSquare className='h-6 w-6 text-[var(--primary-accent)]' />
             <span className='text-xl font-bold text-[var(--foreground)]'>
-              ChatCall
+              CampusFlow
             </span>
           </div>
 
           {/* Navigation */}
           <div className='hidden md:!flex items-center gap-8'>
             {[
-              { label: 'Home', id: 'hero' },
-              { label: 'Stats', id: 'stats' },
+              { label: 'Overview', id: 'hero' },
+              { label: 'Impact', id: 'stats' },
               { label: 'Features', id: 'features' },
-              { label: 'CTA', id: 'cta' }
+              { label: 'Get Started', id: 'cta' }
             ].map(section => (
               <button
                 key={section.id}

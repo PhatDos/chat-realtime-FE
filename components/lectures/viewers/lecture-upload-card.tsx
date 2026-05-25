@@ -10,23 +10,37 @@ import type { LectureFileType } from "@/types/lecture";
 
 interface LectureUploadCardProps {
   title: string;
-  file?: string;
-  fileType: LectureFileType;
+  file?: { url: string; type?: string };
   loading: boolean;
   onTitleChange: (value: string) => void;
-  onFileChange: (value?: string) => void;
+  onFileChange: (value?: { url: string; type?: string }) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
+
+type FileUploadValue = string | { url: string; type?: string };
 
 export function LectureUploadCard({
   title,
   file,
-  fileType,
   loading,
   onTitleChange,
   onFileChange,
   onSubmit,
 }: LectureUploadCardProps) {
+  const handleFileChange = (value?: FileUploadValue) => {
+    if (!value) {
+      onFileChange(undefined);
+      return;
+    }
+
+    if (typeof value === "string") {
+      onFileChange({ url: value });
+      return;
+    }
+
+    onFileChange(value);
+  };
+
   return (
     <Card className="overflow-hidden border border-white/10 bg-white/5 p-0 shadow-2xl shadow-black/30 backdrop-blur-xl">
       <div className="border-b border-white/10 px-6 py-4">
@@ -59,14 +73,9 @@ export function LectureUploadCard({
           <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-4 transition-colors duration-200 hover:border-cyan-400/40 hover:bg-white/8">
             <FileUpload
               value={file || ""}
-              onChange={(value) => {
-                if (typeof value === "string") {
-                  onFileChange(value);
-                } else {
-                  onFileChange(value?.url);
-                }
-              }}
+              onChange={handleFileChange}
               endpoint="messageFile"
+              returnObject
             />
           </div>
         </div>

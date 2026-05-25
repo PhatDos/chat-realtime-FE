@@ -49,8 +49,7 @@ export default function UploadLecturePage() {
   const [leaderboardMode, setLeaderboardMode] = useState<LeaderboardMode>("gradebook");
   const [isNavigating, setIsNavigating] = useState(false);
   const [title, setTitle] = useState("");
-  const [file, setFile] = useState<string | undefined>();
-  const [fileType] = useState<LectureFileType>(LectureFileType.PDF);
+  const [file, setFile] = useState<{ url: string; type?: string } | undefined>();
 
   const { data: serverSidebarData } = useServerSidebarQuery({
     serverId,
@@ -184,9 +183,11 @@ export default function UploadLecturePage() {
     try {
       setLoading(true);
 
+      const fileType = LectureFileType.PDF;
+
       const result = await lectureService.createLecture({
         title,
-        fileUrl: file,
+        fileUrl: file.url,
         fileType,
         channelId,
         memberId,
@@ -242,7 +243,6 @@ export default function UploadLecturePage() {
               <LectureUploadCard
                 title={title}
                 file={file}
-                fileType={fileType}
                 loading={loading}
                 onTitleChange={setTitle}
                 onFileChange={setFile}

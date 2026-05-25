@@ -11,9 +11,10 @@ interface FileUploadProps {
   onChange: (file?: FileValue) => void;
   value: FileValue;
   endpoint: "serverImage" | "messageFile";
+  returnObject?: boolean;
 }
 
-export const FileUpload = ({ onChange, value, endpoint }: FileUploadProps) => {
+export const FileUpload = ({ onChange, value, endpoint, returnObject }: FileUploadProps) => {
   const url = typeof value === "string" ? value : value?.url;
   const type =
     typeof value === "string"
@@ -71,7 +72,9 @@ export const FileUpload = ({ onChange, value, endpoint }: FileUploadProps) => {
           onClientUploadComplete={(res) => {
             const file = res?.[0];
             if (res && res.length > 0) {
-              if (typeof value === "string" || value === undefined) {
+              if (returnObject) {
+                onChange({ url: file.ufsUrl, type: file.type });
+              } else if (typeof value === "string" || value === undefined) {
                 onChange(file.ufsUrl);
               } else {
                 onChange({ url: file.ufsUrl, type: file.type });

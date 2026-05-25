@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Globe, Loader2, Search, Sparkles, Users, X } from "lucide-react";
+import { ArrowRight, Globe, Search, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { useApiClient } from "@/hooks/use-api-client";
