@@ -3,6 +3,7 @@ import { ServerSidebarResponse } from "@/types/api/server";
 
 interface UseServerSidebarQueryProps {
   serverId: string;
+  enabled?: boolean;
 }
 
 const fetchServerSidebarData = async (
@@ -17,10 +18,12 @@ const fetchServerSidebarData = async (
 
 export const useServerSidebarQuery = ({
   serverId,
+  enabled = true,
 }: UseServerSidebarQueryProps) => {
   return useQuery({
     queryKey: ["server-sidebar", serverId],
     queryFn: () => fetchServerSidebarData(serverId),
+    enabled,
     staleTime: Infinity,
     cacheTime: Infinity,
     refetchOnMount: false,

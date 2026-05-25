@@ -5,13 +5,16 @@ import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormControl, FormField, FormItem } from '../../ui/form'
-import { Plus, Send, Brain, Loader2 } from 'lucide-react'
+import { Plus, Send, Brain, Loader2, Upload, BookOpen } from 'lucide-react'
 import { Input } from '../../ui/input'
 import { useModal } from '@/hooks/use-modal-store'
 import { EmojiPicker } from '../../common/emoji-picker'
 import { ActionTooltip } from '../../common/action-tooltip'
 import { useSocket } from '@/components/providers/socket-provider'
 import { useAuth } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { useTransition } from 'react'
+import { LoadingOverlay } from '../../common/loading-overlay'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
@@ -19,10 +22,13 @@ import { getAiUnreadSummary } from '@/services/ai-service'
 
 import { OptimisticMessage } from '@/types'
 import { chatQueryKey, insertMessage } from '@/lib/query/chat-cache'
+import { MemberRole } from '@/types/api/member'
 
 interface ChannelChatInputProps {
   query: { channelId: string; serverId: string }
   name: string
+  memberId: string
+  role?: MemberRole
 }
 
 const formSchema = z.object({
@@ -31,17 +37,46 @@ const formSchema = z.object({
 
 export const ChannelChatInput = ({
   name,
-  query
+  query,
+  memberId,
+  role,
 }: ChannelChatInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const { onOpen } = useModal()
   const { socket } = useSocket()
   const { userId } = useAuth()
+  const router = useRouter()
   const apiClient = useApiClient()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const queryKey = chatQueryKey(query.channelId)
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  const onNavigateToLectureUpload = () => {
+    const url = `/lectures?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}`
+    startTransition(() => {
+      void router.push(url)
+    })
+  }
+
+  const canUploadLecture = role === MemberRole.SERVEROWNER || role === MemberRole.VICESERVEROWNER
+
+  const openLectureHub = async () => {
+    try {
+      const url = `/lectures?serverId=${encodeURIComponent(query.serverId)}&channelId=${encodeURIComponent(query.channelId)}&memberId=${encodeURIComponent(memberId)}&view=student`
+
+      startTransition(() => {
+        void router.push(url)
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to open lecture',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const getAiSummaryContent = (data: unknown): string => {
     if (typeof data === 'string') return data.trim()
@@ -168,6 +203,7 @@ export const ChannelChatInput = ({
 
   return (
     <Form {...form}>
+      <LoadingOverlay isLoading={isPending} text="Opening upload..." />
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <FormField
           control={form.control}
@@ -175,7 +211,7 @@ export const ChannelChatInput = ({
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <div className='relative p-4 pb-6'>
+                <div className='relative p-4 pb-6 bg-gradient-to-b from-white dark:from-zinc-950 to-gray-50 dark:to-zinc-900 border border-neutral-200 dark:border-zinc-700'>
                   <button
                     type='button'
                     onClick={() =>
@@ -198,9 +234,7 @@ export const ChannelChatInput = ({
 
                   <Input
                     disabled={isLoading}
-                    className='px-14 pr-28 py-6 bg-zinc-200/90
-                                        dark:bg-zinc-700/75 border-none border-0 focus-visible:ring-0
-                                        focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-300'
+                    className='px-14 pr-28 py-6 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-950 dark:to-zinc-900 border border-neutral-200 dark:border-zinc-700 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-300 rounded-md transition-all duration-200'
                     placeholder={`Message #${name}`}
                     {...field}
                     ref={inputRef}
@@ -246,6 +280,37 @@ export const ChannelChatInput = ({
                         )}
                       </button>
                     </ActionTooltip>
+                    {canUploadLecture ? (
+                      <ActionTooltip label='Upload lecture' side='top'>
+                        <button
+                          type='button'
+                          onClick={onNavigateToLectureUpload}
+                          className='flex items-center justify-center'
+                          aria-label='Upload lecture'
+                        >
+                          <Upload
+                            className='text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition'
+                            size={24}
+                          />
+                        </button>
+                      </ActionTooltip>
+                    ) : (
+                      <ActionTooltip label='Lecture materials' side='top'>
+                        <button
+                          type='button'
+                          onClick={() => void openLectureHub()}
+                          disabled={isPending}
+                          className='flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-60'
+                          aria-label='Lecture materials'
+                        >
+                          {isPending ? (
+                            <Loader2 className='text-zinc-500 dark:text-zinc-400 animate-spin' size={24} />
+                          ) : (
+                            <BookOpen className='text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition' size={24} />
+                          )}
+                        </button>
+                      </ActionTooltip>
+                    )}
                   </div>
                 </div>
               </FormControl>
@@ -256,3 +321,4 @@ export const ChannelChatInput = ({
     </Form>
   )
 }
+

@@ -6,18 +6,32 @@ import type {
   MemberWithProfileResponse,
 } from "@/types/api/member";
 
+export type ServerVisibility = "PUBLIC" | "PRIVATE";
+
 export interface ServerResponse {
   id: string;
   name: string;
   imageUrl: string;
   inviteCode: string;
   profileId: string;
+  visibility: ServerVisibility;
+  memberCount: number;
+  generalChannelId: string | null;
   createdAt: ApiDateTime;
   updatedAt: ApiDateTime;
 }
 
-export type InitialServerResponse = ServerResponse | null;
+export interface InitialServerEndpointResponse {
+  server: ServerResponse & {
+    generalChannel?: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  initialChannel: import("./channel").InitialChannelResponse | null;
+}
 
+export type InitialServerResponse = InitialServerEndpointResponse | null;
 export interface ServerSummary {
   id: string;
   name: string;
@@ -25,6 +39,18 @@ export interface ServerSummary {
   unreadCount?: number;
 }
 
+export interface ServerDiscoverySummary {
+  id: string;
+  name: string;
+  imageUrl: string;
+  inviteCode: string;
+  visibility: ServerVisibility;
+  memberCount: number;
+}
+
+export interface ServerSearchResponse {
+  items: ServerDiscoverySummary[];
+}
 export interface ServerPaginationResponse {
   data: ServerSummary[];
   total: number;

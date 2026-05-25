@@ -99,7 +99,7 @@ export const InitialModal = () => {
                   control={form.control}
                   name='imageUrl'
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className='w-full'>
                       <FormControl>
                         <FileUpload
                           endpoint='serverImage'

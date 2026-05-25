@@ -2,7 +2,6 @@
 
 import type {
   ChannelResponse,
-  InitialChannelResponse,
 } from "@/types/api/channel";
 import type {
   InitialServerResponse,
@@ -16,20 +15,6 @@ export const getInitialServer = async () => {
   try {
     const response = await fetchWithAuth((client, config) =>
       client.get<InitialServerResponse>("/servers/initial", config)
-    );
-    return response.data;
-  } catch (error) {
-    return null;
-  }
-};
-
-export const getInitialChannel = async (serverId: string) => {
-  try {
-    const response = await fetchWithAuth((client, config) =>
-      client.get<InitialChannelResponse>(
-        `/servers/${serverId}/initial-channel`,
-        config
-      )
     );
     return response.data;
   } catch (error) {

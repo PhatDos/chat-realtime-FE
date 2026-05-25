@@ -10,7 +10,7 @@ import {
 import { useModal } from "@/hooks/use-modal-store";
 import { ServerWithMembersWithProfiles } from "@/types";
 import { ScrollArea } from "../ui/scroll-area";
-import { UserAvatar } from "../common/user-avatar";
+import { ProfileHoverCard } from "../common/profile-hover-card";
 import {
   Check,
   Gavel,
@@ -98,7 +98,12 @@ export const MembersModal = () => {
         <ScrollArea className="mt-8 max-h-[420px] pr-6">
           {server?.members?.map((member) => (
             <div key={member.id} className="flex items-center gap-x-2 mb-6">
-              <UserAvatar src={member.profile.imageUrl} />
+              <ProfileHoverCard
+                id={member.profileId}
+                name={member.profile.name}
+                imageUrl={member.profile.imageUrl}
+                currentProfileId={server.profileId}
+              />
               <div className="flex flex-col gap-y-1">
                 <div className="text-xs font-semibold flex items-center gap-x-1">
                   {member.profile.name}

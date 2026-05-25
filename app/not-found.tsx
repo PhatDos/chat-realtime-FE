@@ -12,7 +12,7 @@ export default function NotFound() {
       
       <div className="max-w-xs mx-auto space-y-2">
         <p className="text-zinc-500 dark:text-zinc-400">
-          You look lost, stranger. You know what helps when you are lost? A piping hot bowl of noodles. Take a seat, we are frantically working on (finding) your page!
+          You look lost, stranger. You know what helps when you are lost? A map. Or in this case, a link back to the home page.
         </p>
         <p className="text-zinc-500 dark:text-zinc-400 text-sm">
           (Or you can just go back home.)
@@ -20,7 +20,7 @@ export default function NotFound() {
       </div>
 
       <Button asChild className="bg-indigo-500 hover:bg-indigo-500/90 text-white mt-8">
-        <Link href="/setup">
+        <Link href="/newsfeed">
           Return Home
         </Link>
       </Button>

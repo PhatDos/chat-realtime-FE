@@ -40,7 +40,7 @@ export const DeleteServerModal = () => {
       await invalidateServers(queryClient)
 
       onClose()
-      router.push('/setup')
+      router.push('/newsfeed')
     } catch (err) {
       console.log(err)
       toast.server.errorDelete()

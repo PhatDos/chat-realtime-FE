@@ -11,6 +11,8 @@ import {
   CommandList,
 } from "../ui/command";
 import { useParams, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { LoadingOverlay } from "../common/loading-overlay";
 
 interface ServerSearchProps {
   data: {
@@ -27,6 +29,7 @@ interface ServerSearchProps {
 }
 export const ServerSearch = ({ data }: ServerSearchProps) => {
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const params = useParams();
 
@@ -50,17 +53,21 @@ export const ServerSearch = ({ data }: ServerSearchProps) => {
     type: "channel" | "member";
   }) => {
     setOpen(false);
+    startTransition(() => {
+      if (type === "member") {
+        void router.push(`/servers/${params?.serverId}/conversations/${id}`);
+        return;
+      }
 
-    if (type === "member") {
-      return router.push(`/servers/${params?.serverId}/conversations/${id}`);
-    }
-
-    if (type === "channel") {
-      return router.push(`/servers/${params?.serverId}/channels/${id}`);
-    }
+      if (type === "channel") {
+        void router.push(`/servers/${params?.serverId}/channels/${id}`);
+        return;
+      }
+    });
   };
   return (
     <>
+      <LoadingOverlay isLoading={isPending} text="Navigating..." />
       <button
         onClick={() => setOpen(true)}
         className="group px-2 py-2 rounded-md flex 

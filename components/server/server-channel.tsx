@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { ChannelResponse as Channel, ChannelType } from "@/types/api/channel";
 import { MemberRole } from "@/types/api/member";
 import { ServerResponse as Server } from "@/types/api/server";
 import { Edit, Hash, Lock, Mic, Trash, Video, Bell, BellOff } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import { LoadingOverlay } from "../common/loading-overlay";
 import { ActionTooltip } from "../common/action-tooltip";
 import { ModalType, useModal } from "@/hooks/use-modal-store";
 import { useApiClient } from "@/hooks/use-api-client";
@@ -41,9 +42,13 @@ export const ServerChannel = ({
     const { startSwitchingChannel } = useChannelSwitchStore();
     const params = useParams();
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
+
     const onClick = () => {
         startSwitchingChannel(channel.id);
-        router.push(`/servers/${params?.serverId}/channels/${channel.id}`);
+        startTransition(() => {
+            void router.push(`/servers/${params?.serverId}/channels/${channel.id}`);
+        });
     }
 
     const onAction = (e: React.MouseEvent, action: ModalType) => {
@@ -138,6 +143,7 @@ export const ServerChannel = ({
                     {unreadCount > 99 ? '99+' : unreadCount}
                 </div>
             )}
+            <LoadingOverlay isLoading={isPending} text="Switching channel..." />
         </button>
     )
 }

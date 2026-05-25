@@ -3,7 +3,9 @@
 import { ConversationWithProfiles } from '@/types/api/message'
 import { ScrollArea } from '@radix-ui/react-scroll-area'
 import { useParams, useRouter } from 'next/navigation'
-import { UserAvatar } from '../common/user-avatar'
+import { useTransition } from 'react'
+import { LoadingOverlay } from '../common/loading-overlay'
+import { ProfileHoverCard } from '../common/profile-hover-card'
 import { cn } from '@/lib/utils'
 import { MessageSquare } from 'lucide-react'
 
@@ -18,9 +20,11 @@ export const ConversationSidebar = ({
 }: ConversationSidebarProps) => {
   const router = useRouter()
   const params = useParams()
+  const [isPending, startTransition] = useTransition()
 
   return (
     <div className='flex flex-col h-full flex-1 text-primary dark:bg-[#2B2D31] bg-[#f2f3f5]'>
+      <LoadingOverlay isLoading={isPending} text="Opening conversation..." />
       <div className='px-3 py-4 border-b border-zinc-200 dark:border-zinc-700'>
         <h2 className='text-lg font-semibold'>Direct Messages</h2>
       </div>
@@ -36,18 +40,34 @@ export const ConversationSidebar = ({
               const isActive = params?.profileId === otherProfile.id
 
               return (
-                <button
+                <div
                   key={conversation.id}
-                  onClick={() =>
-                    router.push(`/conversations/${otherProfile.id}`)
-                  }
+                  onClick={() => {
+                    startTransition(() => {
+                      void router.push(`/conversations/${otherProfile.id}`)
+                    })
+                  }}
+                  role='button'
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      startTransition(() => {
+                        void router.push(`/conversations/${otherProfile.id}`)
+                      })
+                    }
+                  }}
                   className={cn(
                     'group px-2 py-2 rounded-md flex items-center gap-x-2 w-full hover:bg-zinc-700/10 dark:hover:bg-zinc-700/50 transition mb-1',
-                    isActive && 'bg-zinc-700/50 dark:bg-zinc-700'
+                    isActive && 'bg-zinc-700/50 dark:bg-zinc-700',
+                    'cursor-pointer text-left'
                   )}
                 >
-                  <UserAvatar
-                    src={otherProfile.imageUrl}
+                  <ProfileHoverCard
+                    id={otherProfile.id}
+                    name={otherProfile.name}
+                    imageUrl={otherProfile.imageUrl}
+                    currentProfileId={currentProfileId}
                     className='h-8 w-8 md:h-8 md:w-8'
                   />
                   <p
@@ -59,7 +79,7 @@ export const ConversationSidebar = ({
                   >
                     {otherProfile.name}
                   </p>
-                </button>
+                </div>
               )
             })
           ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useModal } from "@/hooks/use-modal-store";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
@@ -10,6 +10,7 @@ import { useOrigin } from "@/hooks/use-origin";
 import { useState } from "react";
 import { useApiClient } from "@/hooks/use-api-client";
 import { refreshServerInviteCode } from "@/services/servers/servers-service";
+import { QRCodeBlock } from "@/components/common/qr-code-block";
 
 export const InviteModal = () => {
     const { onOpen, isOpen, onClose, type, data } = useModal();
@@ -69,6 +70,14 @@ export const InviteModal = () => {
                         <Button disabled={isLoading} onClick={onCopy} size="icon">
                             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         </Button>
+                    </div>
+                    <div className="mt-6">
+                        <QRCodeBlock
+                            title="Invite QR"
+                            description="Scan to open the invite link instantly."
+                            value={inviteUrl}
+                            size={200}
+                        />
                     </div>
                     <Button onClick={onNew} disabled={isLoading} variant="link"
                         size="sm"

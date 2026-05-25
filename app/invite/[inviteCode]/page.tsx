@@ -47,11 +47,11 @@ const InviteCodePage = () => {
         if (err.response?.status === 404) {
           // Invalid invite code
           toast.server.errorJoinInvalidInvite(err.response?.data?.message);
-          router.push("/setup");
+          router.push("/newsfeed");
         } else {
           // Other errors
           toast.server.errorJoin(err.response?.data?.message);
-          router.push("/setup");
+          router.push("/newsfeed");
         }
       }
     };
