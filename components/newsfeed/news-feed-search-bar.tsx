@@ -122,7 +122,7 @@ export const NewsFeedSearchBar = () => {
           window.setTimeout(() => setIsSearchFocused(false), 150);
         }}
         className="h-11 w-full rounded-full border border-zinc-200/80 bg-zinc-50/90 pl-11 pr-36 text-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-300 focus:bg-white focus:ring-4 focus:ring-zinc-950/5 dark:border-white/10 dark:bg-white/5 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:bg-white/8 dark:focus:ring-white/10"
-        placeholder="Search servers or posts"
+        placeholder="Search in posts..."
       />
       <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
         {searchQuery ? (

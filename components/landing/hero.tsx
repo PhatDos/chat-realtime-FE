@@ -25,7 +25,7 @@ export function Hero() {
             </span>
             <span className='text-sm text-blue-500 dark:text-purple-500'>
               <BlurText
-                text='Real-time communication platform'
+                text='Realtime social collaboration for students'
                 delay={150}
                 animateBy='words'
                 direction='top'
@@ -35,17 +35,15 @@ export function Hero() {
 
           {/* Heading */}
           <h1 className='text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-black dark:text-white'>
-            Connect instantly with{' '}
+            Build academic teamwork with{' '}
             <span className='text-blue-500 dark:text-purple-500'>
-              voice, video & chat
+              AI-assisted collaboration
             </span>
           </h1>
 
           {/* Subtext */}
           <p className='text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed'>
-            Experience seamless real-time messaging with crystal-clear voice and
-            video calls. Built for teams and individuals who value instant
-            communication.
+            Unite chat, newsfeed, voice, and AI-powered knowledge retrieval in one platform designed for study groups, project teams, and academic communities.
           </p>
 
           {/* Buttons */}
@@ -55,7 +53,7 @@ export function Hero() {
               className='bg-blue-500 dark:bg-purple-500 text-white hover:bg-blue-600 dark:hover:bg-purple-600 text-base px-8 h-12'
               onClick={() => router.push('/setup')}
             >
-              Start Chatting Free
+              Start Collaborating Free
               <ArrowRight className='ml-2 h-5 w-5' />
             </Button>
           </div>
@@ -65,18 +63,18 @@ export function Hero() {
             {[
               {
                 icon: MessageCircle,
-                title: 'Instant Messaging',
-                desc: 'Real-time chat with typing indicators'
+                title: 'Academic Servers',
+                desc: 'Organize classes, teams, and study spaces by topic'
               },
               {
                 icon: Video,
-                title: 'Video Calls',
-                desc: 'HD video conferencing for teams'
+                title: 'Video Study Sessions',
+                desc: 'Run group meetings, presentations, and interview practice'
               },
               {
                 icon: Phone,
-                title: 'Voice Calls',
-                desc: 'Crystal-clear audio quality'
+                title: 'AI Knowledge Search',
+                desc: 'Find decisions, summaries, and discussions across your workspace'
               }
             ].map(({ icon: Icon, title, desc }) => (
               <div

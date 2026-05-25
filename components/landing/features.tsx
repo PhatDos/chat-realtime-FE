@@ -7,36 +7,36 @@ export function Features() {
   const features = [
     {
       icon: Zap,
-      title: "Lightning Fast",
+      title: "Realtime Collaboration",
       description:
-        "Messages delivered in milliseconds with our optimized real-time infrastructure.",
+        "Keep teams aligned with fast chat, voice, and shared workspace updates.",
     },
     {
       icon: Shield,
-      title: "End-to-End Encrypted",
+      title: "Privacy Controls",
       description:
-        "Your conversations are private and secure with military-grade encryption.",
+        "Visibility settings keep private classes and team spaces protected.",
     },
     {
       icon: Users,
-      title: "Group Conversations",
+      title: "Study Groups & Teams",
       description:
-        "Create unlimited groups and channels for team collaboration.",
+        "Create servers for classes, capstone teams, clubs, and project squads.",
     },
     {
       icon: Lock,
-      title: "Privacy First",
-      description: "We never sell your data. Your privacy is our top priority.",
+      title: "Academic Newsfeed",
+      description: "Share announcements, resources, and project updates in one place.",
     },
     {
       icon: Globe,
-      title: "Global Infrastructure",
-      description: "Servers in 150+ countries ensure low latency worldwide.",
+      title: "AI-assisted Search",
+      description: "Search discussions semantically to find the right context faster.",
     },
     {
       icon: Smartphone,
-      title: "Cross-Platform",
-      description: "Seamless experience across web, mobile, and desktop apps.",
+      title: "Video Sessions",
+      description: "Support meetings, rehearsals, and remote study sessions anywhere.",
     },
   ];
 
@@ -49,7 +49,7 @@ export function Features() {
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-black dark:text-white">
             <BlurText
-              text="Everything you need for modern communication"
+              text="Everything students need to collaborate and learn"
               delay={150}
               animateBy="words"
               direction="top"
@@ -57,8 +57,7 @@ export function Features() {
             />
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
-            Built with the latest technology to provide the best real-time
-            communication experience.
+            A focused academic collaboration platform combining realtime communication, social sharing, and AI-assisted knowledge retrieval.
           </p>
         </div>
 

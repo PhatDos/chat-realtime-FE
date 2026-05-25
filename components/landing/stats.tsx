@@ -4,10 +4,10 @@ import CountUp from "../animation/count-up";
 
 export function Stats() {
   const stats = [
-    { value: 10, unit: "M+", label: "Active Users", sublabel: "worldwide" },
-    { value: 99.9, unit: "%", label: "Uptime", sublabel: "guaranteed" },
-    { value: 50, unit: "ms", label: "Latency", sublabel: "average" },
-    { value: 150, unit: "+", label: "Countries", sublabel: "supported" },
+    { value: 10, unit: "K+", label: "Study Spaces", sublabel: "organized by teams" },
+    { value: 99.9, unit: "%", label: "Reliable Sync", sublabel: "for realtime work" },
+    { value: 50, unit: "ms", label: "Fast Retrieval", sublabel: "for AI search" },
+    { value: 150, unit: "+", label: "Academic Groups", sublabel: "publicly discoverable" },
   ];
 
   return (

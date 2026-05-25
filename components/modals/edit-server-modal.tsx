@@ -193,7 +193,7 @@ export const EditServerModal = () => {
 
             <DialogFooter className='bg-gray-300 px-6 py-2 flex justify-center'>
               <Button
-                className='w-1/3 bg-purple-500 border-purple-950 border-2 hover:bg-orange-400 px-4 py-2 text-sm'
+                className='w-1/3 bg-slate-50 border-purple-500 border-2 hover:bg-slate-300 px-4 py-2 text-sm'
                 disabled={isLoading}
               >
                 Save

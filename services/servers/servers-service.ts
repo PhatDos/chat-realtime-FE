@@ -46,6 +46,10 @@ export const searchServers = async (
   return { items } satisfies ServerSearchResponse;
 };
 
+export const getTopPublicServers = async (api: ClientApi) => {
+  return api.get<ServerDiscoverySummary[]>("/servers/discover/top");
+};
+
 export const updateServer = async (
   api: ClientApi,
   serverId: string,

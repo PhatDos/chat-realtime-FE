@@ -22,11 +22,10 @@ export function CTA() {
                         bg-gradient-to-br from-blue-50 to-blue-100 dark:from-purple-900 dark:to-purple-700 transition-colors"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-black dark:text-white">
-            Ready to transform your communication?
+            Ready to build your academic collaboration space?
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Join millions of users who trust ChatFlow for their daily
-            conversations. Start for free, no credit card required.
+            Bring chat, newsfeed, class groups, video sessions, and AI search into one workspace for students and teams.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
@@ -40,14 +39,14 @@ export function CTA() {
                 "Loading..."
               ) : (
                 <>
-                  Get Started Free
+                  Create Your Space
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
             </Button>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-300 mt-6">
-            Free forever • No credit card required • Cancel anytime
+            Free forever • No credit card required • Built for student collaboration
           </p>
         </div>
       </div>

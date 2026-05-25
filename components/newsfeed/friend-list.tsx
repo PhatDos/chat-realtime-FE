@@ -13,6 +13,8 @@ import { LoadingOverlay } from "../common/loading-overlay";
 import { UserMinus, MessageCircle } from "lucide-react";
 
 import { unfriend } from "@/services/friends-client-service";
+import { getTopPublicServers } from "@/services/servers/servers-service";
+import type { ServerDiscoverySummary } from "@/types/api/server";
 
 interface Friend {
   id: string;
@@ -44,6 +46,9 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
   const [loading, setLoading] = useState(!initialFriends);
   const [error, setError] = useState<string | null>(null);
   const [removingFriendId, setRemovingFriendId] = useState<string | null>(null);
+  const [publicServers, setPublicServers] = useState<ServerDiscoverySummary[]>([]);
+  const [serversLoading, setServersLoading] = useState(true);
+  const [serversError, setServersError] = useState<string | null>(null);
 
   const apiClient = useApiClient();
   const router = useRouter();
@@ -70,6 +75,39 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
 
     fetchFriends();
   }, [apiClient, initialFriends]);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchServers = async () => {
+      try {
+        setServersLoading(true);
+        setServersError(null);
+
+        const items = await getTopPublicServers(apiClient);
+
+        if (!active) return;
+
+        setPublicServers(items || []);
+      } catch (err) {
+        if (!active) return;
+
+        const message = err instanceof Error ? err.message : "Failed to load public servers";
+        setServersError(message);
+        setPublicServers([]);
+      } finally {
+        if (active) {
+          setServersLoading(false);
+        }
+      }
+    };
+
+    void fetchServers();
+
+    return () => {
+      active = false;
+    };
+  }, [apiClient]);
 
   const onlineFriends = friends.filter((f) =>
     presence.hasOwnProperty(f.profileId) ? presence[f.profileId] : f.isOnline
@@ -113,36 +151,41 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
       <Card className="rounded-[1.5rem] border border-white/70 bg-white/80 shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm dark:border-white/10 dark:bg-[#1c1c20]/85">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-sm font-semibold">
-            <span>Servers you may want to join</span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">Explore</span>
+            <span>Popular public servers</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {[
-            { id: "srv1", name: "Study Group", imageUrl: "/server-default.svg" },
-            { id: "srv2", name: "Design Club", imageUrl: "/server-default.svg" },
-            { id: "srv3", name: "Gaming Hub", imageUrl: "/server-default.svg" },
-          ].map((server) => (
-            <Link key={server.id} href={`/servers/${server.id}`}>
-              <div className="flex items-center gap-3 rounded-2xl p-2.5 transition hover:bg-zinc-100/80 dark:hover:bg-white/5">
-                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                  <img src={server.imageUrl} alt="" className="h-6 w-6 object-contain" />
+          {serversLoading ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading public servers...</p>
+          ) : serversError ? (
+            <p className="text-xs text-red-500">{serversError}</p>
+          ) : publicServers.length === 0 ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">No public servers available</p>
+          ) : (
+            publicServers.map((server) => (
+              <Link key={server.id} href={`/invite/${server.inviteCode}`}>
+                <div className="flex items-center gap-3 rounded-2xl p-2.5 transition hover:bg-zinc-100/80 dark:hover:bg-white/5">
+                  <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <img src={server.imageUrl} alt="" className="h-6 w-6 object-contain" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{server.name}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {server.memberCount.toLocaleString()} members · public
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 rounded-full px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-200/80 dark:text-zinc-200 dark:hover:bg-white/10"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    Join
+                  </Button>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{server.name}</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">Active topics · popular</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 rounded-full px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-200/80 dark:text-zinc-200 dark:hover:bg-white/10"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  Join
-                </Button>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))
+          )}
         </CardContent>
       </Card>
 
