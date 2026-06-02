@@ -4,6 +4,7 @@ import { ConversationMobileToggle } from '../common/conversation-mobile-toggle'
 import { ProfileHoverCard } from '../common/profile-hover-card'
 import { SocketIndicator } from '../common/socket-indicator'
 import { ChatVideoButton } from './chat-video-button'
+import { ChatNewsfeedButton } from './chat-newsfeed-button'
 import { ConversationWithProfiles } from '@/types/api/message'
 
 interface ChatHeaderProps {
@@ -52,6 +53,7 @@ export const ChatHeader = ({
       )}
       <p className='font-semibold text-md text-black dark:text-white'>{name}</p>
       <div className='ml-auto flex items-center'>
+        <ChatNewsfeedButton />
         {type === 'conversation' && <ChatVideoButton />}
         <SocketIndicator />
       </div>

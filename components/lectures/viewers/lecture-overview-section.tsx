@@ -103,24 +103,28 @@ export function LectureOverviewSection({
             <h2 className="text-xl font-semibold text-white">Generate Learning Materials</h2>
             <div className="text-sm text-slate-400">Owner tools for generating summary, flashcards, and quiz.</div>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <QuizGenerator
+                lectureId={lecture.id}
+                onGenerate={onGenerateQuiz}
+                isGenerating={generating.quiz || false}
+                alreadyGenerated={hasQuiz}
+              />
+            </div>
+
             <SummaryGenerator
               lectureId={lecture.id}
               onGenerate={onGenerateSummary}
               isGenerating={generating.summary || false}
               alreadyGenerated={hasSummary}
             />
+
             <FlashcardGenerator
               lectureId={lecture.id}
               onGenerate={onGenerateFlashcards}
               isGenerating={generating.flashcards || false}
               alreadyGenerated={hasFlashcards}
-            />
-            <QuizGenerator
-              lectureId={lecture.id}
-              onGenerate={onGenerateQuiz}
-              isGenerating={generating.quiz || false}
-              alreadyGenerated={hasQuiz}
             />
           </div>
         </div>
