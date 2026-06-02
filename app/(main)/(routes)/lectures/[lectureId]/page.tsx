@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useLectureData } from "@/hooks/lectures/use-lecture-data";
 import { useLectureService, type LectureFileRow } from "@/services/lectures/lecture.service";
-import type { Assessment } from "@/services/lectures/lecture.service";
-import { AssessmentEditor } from "@/components/lectures/viewers/assessment-editor";
+import type { Quiz } from "@/services/lectures/lecture.service";
+import { QuizEditor } from "@/components/lectures/viewers/quiz-editor";
 import { SummaryViewer } from "@/components/lectures/viewers/summary-viewer";
 import { FlashcardViewer } from "@/components/lectures/viewers/flashcard-viewer";
 import { LectureOverviewSection } from "@/components/lectures/viewers/lecture-overview-section";
@@ -28,7 +28,7 @@ export default function LectureDetailPage() {
   const [loadingLectureFiles, setLoadingLectureFiles] = useState(false);
   const hasSummary = Boolean(lecture?.summary);
   const hasFlashcards = Boolean(lecture?.flashcardSet?.flashcards?.length);
-  const hasQuiz = Boolean(lecture?.assessment);
+  const hasQuiz = Boolean(lecture?.quiz);
   const serverId = searchParams.get("serverId") ?? "";
   const channelId = searchParams.get("channelId") ?? "";
   const memberId = searchParams.get("memberId") ?? "";
@@ -38,7 +38,7 @@ export default function LectureDetailPage() {
   const availableTabs = isOwner ? ["overview", "summary", "flashcards", "edit-quiz"] : ["overview", "summary", "flashcards"];
   const defaultTab = searchParams.get("tab") ?? "overview";
   const [activeTab, setActiveTab] = useState(availableTabs.includes(defaultTab) ? defaultTab : availableTabs[0]);
-  const [submittingAssessmentId, setSubmittingAssessmentId] = useState<string | null>(null);
+  const [submittingQuizId, setSubmittingQuizId] = useState<string | null>(null);
   const [isNavigating, startNavigation] = useTransition();
   const { data: serverSidebarData } = useServerSidebarQuery({
     serverId,
@@ -49,18 +49,18 @@ export default function LectureDetailPage() {
       ? `/lectures?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}${isStudentView ? "&view=student" : ""}`
       : "/newsfeed";
   const channelName = serverSidebarData?.server.channels.find((channel) => channel.id === channelId)?.name;
-  const assessments = lecture?.assessment ? [lecture.assessment as Assessment] : [];
-  const draftAssessment = lecture?.assessment?.isDraft ? (lecture.assessment as Assessment) : null;
-  const persistedAssessments = assessments.filter((assessment) => !assessment.isDraft);
-  const reviewAssessment = persistedAssessments[0] ?? null;
-  const memberQuizAttempt = lecture?.assessment?.attempts?.find(
+  const quizzes = lecture?.quiz ? [lecture.quiz as Quiz] : [];
+  const draftQuiz = lecture?.quiz?.isDraft ? (lecture.quiz as Quiz) : null;
+  const persistedquizzes = quizzes.filter((quiz) => !quiz.isDraft);
+  const reviewQuiz = persistedquizzes[0] ?? null;
+  const memberQuizAttempt = lecture?.quiz?.attempts?.find(
     (attempt) => attempt.memberId === memberId && Boolean(attempt.submittedAt)
-  ) ?? lecture?.assessment?.attempts?.find((attempt) => attempt.memberId === memberId) ?? null;
+  ) ?? lecture?.quiz?.attempts?.find((attempt) => attempt.memberId === memberId) ?? null;
   const submittedQuizAttempt = memberQuizAttempt?.submittedAt ? memberQuizAttempt : null;
   const inProgressQuizAttempt = memberQuizAttempt && !memberQuizAttempt.submittedAt ? memberQuizAttempt : null;
 
   const getAttemptHref = (attemptId: string) =>
-    `/lectures/${lectureId as string}/assessment-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
+    `/lectures/${lectureId as string}/quiz-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
 
   const getLectureHref = (tab: string) =>
     `/lectures/${lectureId as string}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}&tab=${encodeURIComponent(tab)}`;
@@ -101,9 +101,9 @@ export default function LectureDetailPage() {
   };
 
   const handleGenerateQuiz = async (questionCount: number) => {
-    const generatedAssessment = await generateQuiz(questionCount);
+    const generatedQuiz = await generateQuiz(questionCount);
 
-    if (generatedAssessment?.id) {
+    if (generatedQuiz?.id) {
       setActiveTab("edit-quiz");
     }
   };
@@ -271,26 +271,26 @@ export default function LectureDetailPage() {
                 </TabsContent>
 
                 <TabsContent value="edit-quiz" className="space-y-4 mt-0">
-                  {draftAssessment ? (
-                    <AssessmentEditor
-                      assessment={draftAssessment}
+                  {draftQuiz ? (
+                    <QuizEditor
+                      quiz={draftQuiz}
                       onChanged={async () => {
                         await fetchLecture();
                       }}
                     />
                   ) : null}
 
-                  {reviewAssessment ? (
+                  {reviewQuiz ? (
                     <Card className="border border-white/10 bg-white/5 rounded-2xl p-5 space-y-4">
                       <div>
-                        <h3 className="text-xl font-semibold text-white">{reviewAssessment.title}</h3>
+                        <h3 className="text-xl font-semibold text-white">{reviewQuiz.title}</h3>
                         <p className="text-sm text-slate-400">
-                          {reviewAssessment.type} · {reviewAssessment.status} · {reviewAssessment.totalQuestions} questions
+                          {reviewQuiz.type} · {reviewQuiz.status} · {reviewQuiz.totalQuestions} questions
                         </p>
                       </div>
 
                       <div className="space-y-4">
-                        {reviewAssessment.questions?.map((question, index) => (
+                        {reviewQuiz.questions?.map((question, index) => (
                           <div key={question.id} className="rounded-xl border border-white/10 bg-slate-950/40 p-4 space-y-3">
                             <div className="flex items-start justify-between gap-3">
                               <div>
@@ -323,9 +323,9 @@ export default function LectureDetailPage() {
                         ))}
                       </div>
                     </Card>
-                  ) : !draftAssessment ? (
+                  ) : !draftQuiz ? (
                       <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center">
-                        <p className="text-slate-300">No assessments generated yet. Generate one from Overview tab.</p>
+                        <p className="text-slate-300">No quizzes generated yet. Generate one from Overview tab.</p>
                       </div>
                     ) : null}
                   </TabsContent>

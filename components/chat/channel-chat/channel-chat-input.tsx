@@ -18,7 +18,10 @@ import { LoadingOverlay } from '../../common/loading-overlay'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApiClient } from '@/hooks/use-api-client'
 import { useToast } from '@/hooks/use-toast'
-import { getAiUnreadSummary } from '@/services/ai-service'
+import {
+  getAiUnreadSummary,
+  type AiUnreadSummaryResponse,
+} from '@/services/ai-service'
 
 import { OptimisticMessage } from '@/types'
 import { chatQueryKey, insertMessage } from '@/lib/query/chat-cache'
@@ -78,8 +81,72 @@ export const ChannelChatInput = ({
     }
   }
 
+  const normalizeAiSummaryResponse = (
+    data: unknown,
+  ): AiUnreadSummaryResponse | null => {
+    if (!data || typeof data !== 'object') {
+      return null
+    }
+
+    const payload = data as Record<string, unknown>
+    const direct = payload.summary ? payload : payload.data
+
+    if (!direct || typeof direct !== 'object') {
+      return null
+    }
+
+    const candidate = direct as Record<string, unknown>
+
+    const summary = candidate.summary
+    const mainTopics = candidate.mainTopics
+    const decisions = candidate.decisions
+    const importantQuestions = candidate.importantQuestions
+    const actionItems = candidate.actionItems
+
+    if (typeof summary !== 'string') {
+      return null
+    }
+
+    return {
+      summary: summary.trim(),
+      mainTopics: Array.isArray(mainTopics)
+        ? mainTopics.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+        : [],
+      decisions: Array.isArray(decisions)
+        ? decisions.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+        : [],
+      importantQuestions: Array.isArray(importantQuestions)
+        ? importantQuestions.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+        : [],
+      actionItems: Array.isArray(actionItems)
+        ? actionItems.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+        : [],
+    }
+  }
+
+  const formatAiSummaryContent = (summary: AiUnreadSummaryResponse): string => {
+    const sections = [
+      ['Main topics', summary.mainTopics],
+      ['Decisions', summary.decisions],
+      ['Important questions', summary.importantQuestions],
+      ['Action items', summary.actionItems],
+    ] as const
+
+    const body = sections
+      .filter(([, items]) => items.length > 0)
+      .map(([label, items]) => `${label}:\n${items.map((item) => `- ${item}`).join('\n')}`)
+      .join('\n\n')
+
+    return [summary.summary, body].filter(Boolean).join('\n\n').trim()
+  }
+
   const getAiSummaryContent = (data: unknown): string => {
     if (typeof data === 'string') return data.trim()
+
+    const summary = normalizeAiSummaryResponse(data)
+    if (summary?.summary) {
+      return formatAiSummaryContent(summary)
+    }
 
     if (!data || typeof data !== 'object') {
       return String(data ?? '').trim()
@@ -234,7 +301,7 @@ export const ChannelChatInput = ({
 
                   <Input
                     disabled={isLoading}
-                    className='px-14 pr-28 py-6 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-950 dark:to-zinc-900 border border-neutral-200 dark:border-zinc-700 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-300 rounded-md transition-all duration-200'
+                    className='px-14 pr-36 py-6 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-950 dark:to-zinc-900 border border-neutral-200 dark:border-zinc-700 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-300 rounded-md transition-all duration-200'
                     placeholder={`Message #${name}`}
                     {...field}
                     ref={inputRef}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Assessment } from "@/services/lectures/lecture.service";
+import { Quiz } from "@/services/lectures/lecture.service";
 import { useLectureService } from "@/services/lectures/lecture.service";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
-type AssessmentQuestion = NonNullable<Assessment["questions"]>[number];
-type AssessmentOption = AssessmentQuestion["options"][number];
+type QuizQuestion = NonNullable<Quiz["questions"]>[number];
+type QuizOption = QuizQuestion["options"][number];
 
 type DraftQuestionOption = {
   id: string;
@@ -24,15 +24,15 @@ const SUPPORTED_QUESTION_TYPES = ["MULTIPLE_CHOICE", "TRUE_FALSE"] as const;
 
 type SupportedQuestionType = (typeof SUPPORTED_QUESTION_TYPES)[number];
 
-function isSupportedQuestionType(type: AssessmentQuestion["type"]): type is SupportedQuestionType {
+function isSupportedQuestionType(type: QuizQuestion["type"]): type is SupportedQuestionType {
   return SUPPORTED_QUESTION_TYPES.includes(type as SupportedQuestionType);
 }
 
-function isSingleCorrectAnswerQuestion(type: AssessmentQuestion["type"]) {
+function isSingleCorrectAnswerQuestion(type: QuizQuestion["type"]) {
   return type === "MULTIPLE_CHOICE" || type === "TRUE_FALSE";
 }
 
-function createDraftQuestionOptions(questionType: AssessmentQuestion["type"], questionId = "draft-question") {
+function createDraftQuestionOptions(questionType: QuizQuestion["type"], questionId = "draft-question") {
   const optionTexts = questionType === "TRUE_FALSE" ? ["True", "False"] : ["Option A", "Option B", "Option C", "Option D"];
 
   return optionTexts.map((optionText, index) => ({
@@ -44,56 +44,56 @@ function createDraftQuestionOptions(questionType: AssessmentQuestion["type"], qu
   }));
 }
 
-interface AssessmentEditorProps {
-  assessment: Assessment;
+interface QuizEditorProps {
+  quiz: Quiz;
   onChanged?: () => Promise<void> | void;
 }
 
-export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProps) {
+export function QuizEditor({ quiz, onChanged }: QuizEditorProps) {
   const service = useLectureService();
   const { toast } = useToast();
-  const isDraftAssessment = Boolean(assessment.isDraft);
+  const isDraftQuiz = Boolean(quiz.isDraft);
 
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [title, setTitle] = useState(assessment.title);
-  const [description, setDescription] = useState(assessment.description ?? "");
-  const [type, setType] = useState<Assessment["type"]>(assessment.type);
-  const [durationMinutes, setDurationMinutes] = useState<string>(assessment.durationMinutes?.toString() ?? "");
-  const [expiresAt, setExpiresAt] = useState<string>(assessment.expiresAt ? assessment.expiresAt.slice(0, 16) : "");
-  const [allowLateSubmission, setAllowLateSubmission] = useState(assessment.allowLateSubmission);
-  const [questions, setQuestions] = useState(assessment.questions ?? []);
+  const [title, setTitle] = useState(quiz.title);
+  const [description, setDescription] = useState(quiz.description ?? "");
+  const [type, setType] = useState<Quiz["type"]>(quiz.type);
+  const [durationMinutes, setDurationMinutes] = useState<string>(quiz.durationMinutes?.toString() ?? "");
+  const [expiresAt, setExpiresAt] = useState<string>(quiz.expiresAt ? quiz.expiresAt.slice(0, 16) : "");
+  const [allowLateSubmission, setAllowLateSubmission] = useState(quiz.allowLateSubmission);
+  const [questions, setQuestions] = useState(quiz.questions ?? []);
   const [newQuestionText, setNewQuestionText] = useState("");
   const [newQuestionPoints, setNewQuestionPoints] = useState("1");
-  const [newQuestionType, setNewQuestionType] = useState<AssessmentQuestion["type"] | "MULTIPLE_CHOICE">("MULTIPLE_CHOICE");
+  const [newQuestionType, setNewQuestionType] = useState<QuizQuestion["type"] | "MULTIPLE_CHOICE">("MULTIPLE_CHOICE");
   const [newQuestionExplanation, setNewQuestionExplanation] = useState("");
   const [newQuestionOptions, setNewQuestionOptions] = useState<DraftQuestionOption[]>(() =>
     createDraftQuestionOptions("MULTIPLE_CHOICE")
   );
 
   useEffect(() => {
-    setTitle(assessment.title);
-    setDescription(assessment.description ?? "");
-    setType(assessment.type);
-    setDurationMinutes(assessment.durationMinutes?.toString() ?? "");
-    setExpiresAt(assessment.expiresAt ? assessment.expiresAt.slice(0, 16) : "");
-    setAllowLateSubmission(assessment.allowLateSubmission);
-    setQuestions(assessment.questions ?? []);
-  }, [assessment]);
+    setTitle(quiz.title);
+    setDescription(quiz.description ?? "");
+    setType(quiz.type);
+    setDurationMinutes(quiz.durationMinutes?.toString() ?? "");
+    setExpiresAt(quiz.expiresAt ? quiz.expiresAt.slice(0, 16) : "");
+    setAllowLateSubmission(quiz.allowLateSubmission);
+    setQuestions(quiz.questions ?? []);
+  }, [quiz]);
 
   const questionCount = useMemo(() => questions.length, [questions]);
   const isLoading = (action: string) => loadingAction === action;
 
-  const handleSaveAssessment = async () => {
-    if (!isDraftAssessment) {
-      toast({ title: "Read only", description: "Use the create flow to save a new assessment." });
+  const handleSaveQuiz = async () => {
+    if (!isDraftQuiz) {
+      toast({ title: "Read only", description: "Use the create flow to save a new quiz." });
       return;
     }
 
-    setLoadingAction("save-assessment");
+    setLoadingAction("save-quiz");
     setSaving(true);
     try {
-      const createdAssessment = await service.createAssessment(assessment.lectureId ?? "", {
+      const createdQuiz = await service.createQuiz(quiz.lectureId ?? "", {
         title,
         description: description.trim() || null,
         type,
@@ -115,11 +115,11 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
         })),
       });
 
-      toast({ title: "Created", description: "Assessment saved to database" });
+      toast({ title: "Created", description: "Quiz saved to database" });
       await onChanged?.();
-      return createdAssessment;
+      return createdQuiz;
     } catch (error) {
-      toast({ title: "Error", description: getErrorMessage(error, "Failed to save assessment"), variant: "destructive" });
+      toast({ title: "Error", description: getErrorMessage(error, "Failed to save quiz"), variant: "destructive" });
     } finally {
       setSaving(false);
       setLoadingAction(null);
@@ -131,13 +131,13 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
 
     try {
       setLoadingAction("add-question");
-      if (isDraftAssessment) {
+      if (isDraftQuiz) {
         const tempId = `draft-question-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         setQuestions((prev) => [
           ...prev,
           {
             id: tempId,
-            assessmentId: assessment.id,
+            quizId: quiz.id,
             order: prev.length + 1,
             questionText: newQuestionText,
             type: newQuestionType,
@@ -153,7 +153,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
           },
         ]);
       } else {
-        const created = await service.addAssessmentQuestion(assessment.id, {
+        const created = await service.addQuizQuestion(quiz.id, {
           questionText: newQuestionText,
           points: Number(newQuestionPoints) || 1,
           type: newQuestionType,
@@ -179,7 +179,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
       setNewQuestionType("MULTIPLE_CHOICE");
       setNewQuestionExplanation("");
       setNewQuestionOptions(createDraftQuestionOptions("MULTIPLE_CHOICE"));
-      toast({ title: "Question added", description: "New question added to assessment" });
+      toast({ title: "Question added", description: "New question added to quiz" });
     } catch (error) {
       toast({ title: "Error", description: getErrorMessage(error, "Failed to add question"), variant: "destructive" });
     } finally {
@@ -187,7 +187,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
     }
   };
 
-  const handleNewQuestionTypeChange = (nextType: AssessmentQuestion["type"]) => {
+  const handleNewQuestionTypeChange = (nextType: QuizQuestion["type"]) => {
     setNewQuestionType(nextType);
     setNewQuestionOptions(createDraftQuestionOptions(nextType));
   };
@@ -237,11 +237,11 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
       questionText: string;
       points: number;
       explanation: string;
-      type: AssessmentQuestion["type"];
+      type: QuizQuestion["type"];
       options: Array<{ id: string; optionText: string; isCorrect: boolean; order: number }>;
     }
   ) => {
-    if (isDraftAssessment) {
+    if (isDraftQuiz) {
       setQuestions((prev) =>
         prev.map((question) =>
           question.id === questionId
@@ -265,7 +265,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
 
     try {
       setLoadingAction(`question-save-${questionId}`);
-      const updated = await service.updateAssessmentQuestion(questionId, {
+      const updated = await service.updateQuizQuestion(questionId, {
         questionText: payload.questionText,
         points: payload.points,
         explanation: payload.explanation.trim() || undefined,
@@ -281,7 +281,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
     }
   };
   const handleDeleteQuestion = async (questionId: string) => {
-    if (isDraftAssessment) {
+    if (isDraftQuiz) {
       setQuestions((prev) => prev.filter((question) => question.id !== questionId));
       toast({ title: "Draft updated", description: "Question removed locally" });
       return;
@@ -289,9 +289,9 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
 
     try {
       setLoadingAction(`question-delete-${questionId}`);
-      await service.deleteAssessmentQuestion(questionId);
+      await service.deleteQuizQuestion(questionId);
       setQuestions((prev) => prev.filter((question) => question.id !== questionId));
-      toast({ title: "Question deleted", description: "Question removed from assessment" });
+      toast({ title: "Question deleted", description: "Question removed from quiz" });
     } catch (error) {
       toast({ title: "Error", description: getErrorMessage(error, "Failed to delete question"), variant: "destructive" });
     } finally {
@@ -340,15 +340,15 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
       <Card className="p-5 border border-white/10 bg-white/5 rounded-2xl space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold text-white">Assessment editor</h3>
-            <p className="text-sm text-slate-400">{questionCount} questions · {assessment.totalPoints} points</p>
-            {isDraftAssessment ? (
+            <h3 className="text-lg font-semibold text-white">Quiz editor</h3>
+            <p className="text-sm text-slate-400">{questionCount} questions · {quiz.totalPoints} points</p>
+            {isDraftQuiz ? (
               <p className="text-xs text-amber-200">Draft preview</p>
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button type="button" onClick={handleSaveAssessment} disabled={saving || isLoading("save-assessment")} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-              {isLoading("save-assessment") ? (
+            <Button type="button" onClick={handleSaveQuiz} disabled={saving || isLoading("save-quiz")} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
+              {isLoading("save-quiz") ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Saving...
@@ -362,39 +362,38 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor={`assessment-title-${assessment.id}`}>Title</Label>
+            <Label htmlFor={`quiz-title-${quiz.id}`}>Title</Label>
             <input
-              id={`assessment-title-${assessment.id}`}
+              id={`quiz-title-${quiz.id}`}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`assessment-type-${assessment.id}`}>Type</Label>
+            <Label htmlFor={`quiz-type-${quiz.id}`}>Type</Label>
             <select
-              id={`assessment-type-${assessment.id}`}
+              id={`quiz-type-${quiz.id}`}
               value={type}
-              onChange={(event) => setType(event.target.value as Assessment["type"])}
+              onChange={(event) => setType(event.target.value as Quiz["type"])}
               className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
             >
               <option value="QUIZ">QUIZ</option>
-              <option value="ASSIGNMENT">ASSIGNMENT</option>
             </select>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor={`assessment-description-${assessment.id}`}>Description</Label>
+            <Label htmlFor={`quiz-description-${quiz.id}`}>Description</Label>
             <textarea
-              id={`assessment-description-${assessment.id}`}
+              id={`quiz-description-${quiz.id}`}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               className="min-h-24 w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`assessment-duration-${assessment.id}`}>Duration minutes</Label>
+            <Label htmlFor={`quiz-duration-${quiz.id}`}>Duration minutes</Label>
             <input
-              id={`assessment-duration-${assessment.id}`}
+              id={`quiz-duration-${quiz.id}`}
               type="number"
               value={durationMinutes}
               onChange={(event) => setDurationMinutes(event.target.value)}
@@ -402,9 +401,9 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`assessment-expires-${assessment.id}`}>Deadline</Label>
+            <Label htmlFor={`quiz-expires-${quiz.id}`}>Deadline</Label>
             <input
-              id={`assessment-expires-${assessment.id}`}
+              id={`quiz-expires-${quiz.id}`}
               type="datetime-local"
               value={expiresAt}
               onChange={(event) => setExpiresAt(event.target.value)}
@@ -422,7 +421,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
         <div className="flex items-center justify-between gap-3">
           <div>
             <h4 className="text-base font-semibold text-white">Add question</h4>
-            <p className="text-sm text-slate-400">Compose the question fully, then add it to the assessment.</p>
+            <p className="text-sm text-slate-400">Compose the question fully, then add it to the quiz.</p>
           </div>
           <Button type="button" onClick={handleAddQuestion} disabled={isLoading("add-question")} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
             {isLoading("add-question") ? (
@@ -460,7 +459,7 @@ export function AssessmentEditor({ assessment, onChanged }: AssessmentEditorProp
             <Label>Type</Label>
             <select
               value={newQuestionType}
-              onChange={(event) => handleNewQuestionTypeChange(event.target.value as AssessmentQuestion["type"])}
+              onChange={(event) => handleNewQuestionTypeChange(event.target.value as QuizQuestion["type"])}
               className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
             >
               {SUPPORTED_QUESTION_TYPES.map((questionType) => (
@@ -537,14 +536,14 @@ function QuestionEditor({
   onDeleteOption,
   loadingAction,
 }: {
-  question: AssessmentQuestion;
+  question: QuizQuestion;
   onSave: (
     questionId: string,
     payload: {
       questionText: string;
       points: number;
       explanation: string;
-      type: AssessmentQuestion["type"];
+      type: QuizQuestion["type"];
       options: Array<{ id: string; optionText: string; isCorrect: boolean; order: number }>;
     }
   ) => Promise<void>;
@@ -672,7 +671,7 @@ function QuestionEditor({
           {isSupportedQuestionType(type) ? (
             <select
               value={type}
-              onChange={(event) => setType(event.target.value as AssessmentQuestion["type"])}
+              onChange={(event) => setType(event.target.value as QuizQuestion["type"])}
               className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-100 outline-none focus:border-cyan-400"
             >
               {SUPPORTED_QUESTION_TYPES.map((questionType) => (
@@ -747,8 +746,8 @@ function OptionEditor({
   loadingAction,
 }: {
   questionId: string;
-  questionType: AssessmentQuestion["type"];
-  option: AssessmentOption;
+  questionType: QuizQuestion["type"];
+  option: QuizOption;
   onDeleteOption: (questionId: string, optionId: string) => Promise<void>;
   onSetOptionCorrect: (optionId: string, isCorrect: boolean) => void;
   onUpdateOptionText: (optionId: string, optionText: string) => void;

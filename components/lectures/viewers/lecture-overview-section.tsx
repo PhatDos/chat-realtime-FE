@@ -132,9 +132,9 @@ export function LectureOverviewSection({
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{lecture.assessment?.title ?? "Quiz"}</h3>
+                    <h3 className="text-lg font-semibold text-white">{lecture.quiz?.title ?? "Quiz"}</h3>
                     <p className="text-sm text-slate-400">
-                      {lecture.assessment?.type ?? "QUIZ"} · {lecture.assessment?.status ?? "PUBLISHED"} · {lecture.assessment?.totalQuestions ?? 0} questions
+                      {lecture.quiz?.type ?? "QUIZ"} · {lecture.quiz?.status ?? "PUBLISHED"} · {lecture.quiz?.totalQuestions ?? 0} questions
                     </p>
                   </div>
                   <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
@@ -142,8 +142,8 @@ export function LectureOverviewSection({
                   </div>
                 </div>
 
-                {lecture.assessment?.description ? (
-                  <p className="text-sm text-slate-300">{lecture.assessment.description}</p>
+                {lecture.quiz?.description ? (
+                  <p className="text-sm text-slate-300">{lecture.quiz.description}</p>
                 ) : null}
               </div>
 
@@ -152,20 +152,20 @@ export function LectureOverviewSection({
                   <div className="text-xs uppercase tracking-wide text-slate-500">Deadline</div>
                   <div className="mt-1 flex items-center gap-2 text-sm text-slate-200">
                     <CalendarDays className="h-4 w-4 text-cyan-400" />
-                    {lecture.assessment?.expiresAt ? new Date(lecture.assessment.expiresAt).toLocaleString() : "No deadline"}
+                    {lecture.quiz?.expiresAt ? new Date(lecture.quiz.expiresAt).toLocaleString() : "No deadline"}
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
                   <div className="text-xs uppercase tracking-wide text-slate-500">Duration</div>
                   <div className="mt-1 flex items-center gap-2 text-sm text-slate-200">
                     <Clock3 className="h-4 w-4 text-cyan-400" />
-                    {lecture.assessment?.durationMinutes ? `${lecture.assessment.durationMinutes} minutes` : "No time limit"}
+                    {lecture.quiz?.durationMinutes ? `${lecture.quiz.durationMinutes} minutes` : "No time limit"}
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
                   <div className="text-xs uppercase tracking-wide text-slate-500">Late submission</div>
                   <div className="mt-1 text-sm text-slate-200">
-                    {lecture.assessment?.allowLateSubmission ? "Allowed by owner" : "Not allowed"}
+                    {lecture.quiz?.allowLateSubmission ? "Allowed by owner" : "Not allowed"}
                   </div>
                 </div>
               </div>

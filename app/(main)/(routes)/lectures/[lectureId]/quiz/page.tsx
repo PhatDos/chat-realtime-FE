@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { isAxiosError } from "axios";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { useLectureService } from "@/services/lectures/lecture.service";
-import type { AssessmentAttempt, StudentQuizAssessment } from "@/services/lectures/lecture.service";
+import type { QuizAttempt, StudentQuizQuiz } from "@/services/lectures/lecture.service";
 import { QuizTaker } from "@/components/lectures/viewers/quiz-taker";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,10 @@ export default function LectureQuizPage() {
   const lectureService = useLectureService();
   const { toast } = useToast();
   const isMountedRef = useRef(true);
-  const [quiz, setQuiz] = useState<StudentQuizAssessment | null>(null);
+  const [quiz, setQuiz] = useState<StudentQuizQuiz | null>(null);
   const [loadingQuiz, setLoadingQuiz] = useState(true);
-  const [isSubmittingAssessmentAttempt, setIsSubmittingAssessmentAttempt] = useState(false);
-  const [startedAttempt, setStartedAttempt] = useState<AssessmentAttempt | null>(null);
+  const [isSubmittingQuizAttempt, setIsSubmittingQuizAttempt] = useState(false);
+  const [startedAttempt, setStartedAttempt] = useState<QuizAttempt | null>(null);
   const [isStartingAttempt, setIsStartingAttempt] = useState(false);
   const serverId = searchParams.get("serverId") ?? "";
   const channelId = searchParams.get("channelId") ?? "";
@@ -35,7 +35,7 @@ export default function LectureQuizPage() {
   const submittedAttempt = currentAttempt?.submittedAt ? currentAttempt : null;
 
   const getAttemptHref = (attemptId: string) =>
-    `/lectures/${lectureId as string}/assessment-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
+    `/lectures/${lectureId as string}/quiz-attempts/${attemptId}?serverId=${encodeURIComponent(serverId)}&channelId=${encodeURIComponent(channelId)}&memberId=${encodeURIComponent(memberId)}`;
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -86,7 +86,7 @@ export default function LectureQuizPage() {
       setIsStartingAttempt(true);
 
       try {
-        const attempt = await lectureService.startAssessmentAttempt(quiz.id, memberId);
+        const attempt = await lectureService.startQuizAttempt(quiz.id, memberId);
 
         if (isMountedRef.current) {
           setStartedAttempt(attempt);
@@ -111,13 +111,13 @@ export default function LectureQuizPage() {
 
   const handleSubmit = async (answers: Record<string, string>) => {
     if (!quiz) {
-      throw new Error("Assessment not found");
+      throw new Error("Quiz not found");
     }
 
-    setIsSubmittingAssessmentAttempt(true);
+    setIsSubmittingQuizAttempt(true);
 
     try {
-      return await lectureService.submitAssessmentAttempt(quiz.id, memberId, answers);
+      return await lectureService.submitQuizAttempt(quiz.id, memberId, answers);
     } catch (error) {
       if (isAxiosError(error) && error.response?.status === 409) {
         toast({
@@ -129,14 +129,14 @@ export default function LectureQuizPage() {
 
       if (isAxiosError(error) && error.response?.status === 403) {
         toast({
-          title: "Assessment expired",
+          title: "Quiz expired",
           description: "This quiz can no longer be submitted because the deadline has passed.",
         });
       }
 
       throw error;
     } finally {
-      setIsSubmittingAssessmentAttempt(false);
+      setIsSubmittingQuizAttempt(false);
     }
   };
 
@@ -165,7 +165,7 @@ export default function LectureQuizPage() {
 
   return (
     <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-      <LoadingOverlay isLoading={isSubmittingAssessmentAttempt} text="Submitting..." />
+      <LoadingOverlay isLoading={isSubmittingQuizAttempt} text="Submitting..." />
       <div className="mx-auto max-w-4xl px-6 py-8 space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Button
@@ -240,7 +240,7 @@ export default function LectureQuizPage() {
             onSubmitted={(response) => {
               router.push(getAttemptHref(response.attempt.id));
             }}
-            isSubmitting={isSubmittingAssessmentAttempt}
+            isSubmitting={isSubmittingQuizAttempt}
           />
         )}
       </div>

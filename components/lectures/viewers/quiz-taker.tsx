@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AssessmentAttempt, StudentQuizAssessment, StudentQuizOption, SubmitAssessmentAttemptResponse } from "@/services/lectures/lecture.service";
+import { QuizAttempt, StudentQuizQuiz, StudentQuizOption, SubmitQuizAttemptResponse } from "@/services/lectures/lecture.service";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -10,10 +10,10 @@ import { Loader2 } from "lucide-react";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
 
 interface QuizTakerProps {
-  quiz: StudentQuizAssessment;
-  attempt?: Pick<AssessmentAttempt, "startedAt" | "status"> | null;
-  onSubmit: (answers: Record<string, string>) => Promise<SubmitAssessmentAttemptResponse>;
-  onSubmitted?: (response: SubmitAssessmentAttemptResponse) => void;
+  quiz: StudentQuizQuiz;
+  attempt?: Pick<QuizAttempt, "startedAt" | "status"> | null;
+  onSubmit: (answers: Record<string, string>) => Promise<SubmitQuizAttemptResponse>;
+  onSubmitted?: (response: SubmitQuizAttemptResponse) => void;
   isSubmitting: boolean;
 }
 

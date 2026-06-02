@@ -346,7 +346,7 @@ const aiToast: AiToast = {
     infoToast("AI unread-summary", message ?? "AI did not return content"),
   errorUnreadSummary: (message?: string) =>
     errorToast(
-      "AI unread-summary failed",
+      "AI unread-summary failed, try again",
       message ?? "Failed to fetch summary",
     ),
 };
