@@ -1,6 +1,5 @@
 import { ChatHeader } from "@/components/chat/chat-header";
-import { ChannelChatInput } from "@/components/chat/channel-chat/channel-chat-input";
-import { ChannelChatMessages } from "@/components/chat/channel-chat/channel-chat-messages";
+import { ChannelChatWorkspace } from "@/components/chat/channel-chat/channel-chat-workspace";
 import { MediaRoom } from "@/components/ui/media-room";
 import { getChannel, getServerMe } from "@/services/servers/servers-ssr-service";
 import { ChannelType } from "@/types/api/channel";
@@ -11,10 +10,15 @@ interface ChannelIdPageProps {
     serverId: string;
     channelId: string;
   }>;
+  searchParams?: Promise<{
+    tab?: string;
+  }>;
 }
 
-const ChannelIdPage = async ({ params }: ChannelIdPageProps) => {
+const ChannelIdPage = async ({ params, searchParams }: ChannelIdPageProps) => {
   const { serverId, channelId } = await params;
+  const searchParamsData = await searchParams;
+  const activeTab = searchParamsData?.tab === 'polls' ? 'polls' : 'messages';
 
   const [channelRes, accessRes] = await Promise.all([
     getChannel(serverId, channelId),
@@ -34,30 +38,18 @@ const ChannelIdPage = async ({ params }: ChannelIdPageProps) => {
         name={channel.name}
         serverId={channel.serverId}
         type="channel"
+        activeTab={activeTab}
       />
 
       {channel.type === ChannelType.TEXT && (
-        <>
-          <ChannelChatMessages
-            member={member}
-            name={channel.name}
-            chatId={channel.id}
-            apiUrl="/api/messages"
-            socketQuery={{
-              channelId: channel.id,
-              serverId: channel.serverId,
-            }}
-          />
-          <ChannelChatInput
-            name={channel.name}
-            memberId={member.id}
-            role={member.role}
-            query={{
-              channelId: channel.id,
-              serverId: channel.serverId,
-            }}
-          />
-        </>
+        <ChannelChatWorkspace
+          channelId={channel.id}
+          serverId={channel.serverId}
+          channelName={channel.name}
+          member={member}
+          apiUrl="/api/messages"
+          activeTab={activeTab}
+        />
       )}
 
       {channel.type === ChannelType.AUDIO && (
