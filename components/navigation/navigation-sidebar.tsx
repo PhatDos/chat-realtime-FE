@@ -194,7 +194,7 @@ export const NavigationSidebar = ({
   return (
     <div
       className="fixed left-0 top-0 h-full w-[72px] text-primary
-                dark:bg-[#1b1c2a] bg-[#e3e5e8] py-3 space-y-4 
+                dark:bg-[#1b1c2a] bg-[#ffffff] py-3 space-y-4 
                 flex flex-col items-center"
     >
       <NavigationAction />

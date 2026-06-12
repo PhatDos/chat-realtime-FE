@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   MessageCircle,
   UserPlus,
   UserCheck,
@@ -67,6 +69,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
   const [pendingRequestDirection, setPendingRequestDirection] = useState<"sent" | "received" | null>(null);
   const [posts, setPosts] = useState<FeedPost[]>(profile.posts);
   const [friendsCount, setFriendsCount] = useState(profile.friendsCount);
+  const router = useRouter();
   const api = useApiClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -389,6 +392,18 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.08),_transparent_32%),_radial-gradient(circle_at_top_right,_rgba(236,72,153,0.08),_transparent_32%),_linear-gradient(180deg,_#fafafa_0%,_#f4f4f5_100%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.12),_transparent_32%),_radial-gradient(circle_at_top_right,_rgba(168,85,247,0.12),_transparent_32%),_linear-gradient(180deg,_#0f0f11_0%,_#18181b_100%)] pb-12 transition-colors duration-300">
+      <div className="max-w-4xl mx-auto px-4 pt-4">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => router.push("/newsfeed")}
+          className="rounded-full border border-zinc-200/80 bg-white/80 px-4 text-zinc-700 hover:bg-white hover:text-zinc-950 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to newsfeed
+        </Button>
+      </div>
+
       {/* Header Banner */}
       <div className="h-48 bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 dark:from-violet-950 dark:via-indigo-900 dark:to-cyan-950 relative overflow-hidden shadow-inner">
         <div className="absolute inset-0 bg-white/10 dark:bg-black/20 opacity-30 backdrop-blur-[2px]" />
@@ -481,6 +496,7 @@ export const ProfilePage = ({ profile, currentUserId, profileUrl, targetProfileI
                           <>
                             <Button
                               variant="default"
+                              onClick={() => router.push("/conversations")}
                               className="gap-2 rounded-full px-5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition duration-200 active:scale-95"
                               disabled={isAdding}
                             >
