@@ -7,6 +7,7 @@ export interface UserProfileDto {
   joinDate?: string;
   location?: string;
   isOnline: boolean;
+  friendsCount?: number;
 }
 
 export interface PostsPageResponse {

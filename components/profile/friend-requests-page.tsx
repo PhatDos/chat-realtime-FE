@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock3, Loader2, Mail, Send, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ export const FriendRequestsPage = () => {
   const api = useApiClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+    const router = useRouter();
 
   const incomingQuery = useQuery<
     FriendRequestListItemDto[],
@@ -64,6 +66,7 @@ export const FriendRequestsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] }),
       queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] }),
       queryClient.invalidateQueries({ queryKey: ["friend-status"] }),
+      queryClient.invalidateQueries({ queryKey: ["friends"] }),
     ]);
   };
 
@@ -151,9 +154,10 @@ export const FriendRequestsPage = () => {
           </p>
         </div>
 
-        <Link href="/users">
-          <Button variant="outline" size="sm">
-            Browse Users
+        <Link href="/newsfeed">
+          <Button variant="outline" size="sm"
+            className="rounded-full border border-zinc-200/80 bg-white/80 px-4 text-zinc-700 hover:bg-white hover:text-zinc-950 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10">
+            Back to Newsfeed
           </Button>
         </Link>
       </div>

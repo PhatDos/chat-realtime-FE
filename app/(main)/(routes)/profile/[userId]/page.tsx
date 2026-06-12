@@ -1,13 +1,12 @@
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 
 import { ProfilePage } from "@/components/profile/profile-page";
-import { getMockProfile } from "@/components/profile/mock-profile-data";
+import type { MockProfile } from "@/components/profile/profile-page";
 import { currentProfile } from "@/services/current-profile";
 import { fetchWithAuth } from "@/lib/server-api-client";
 import type { UserProfileDto } from "@/types/api/user";
 import type { FriendshipInfoDto } from "@/types/api/friendship";
 import type { FeedPost } from "@/components/newsfeed/types";
-import type { MockProfile } from "@/components/profile/mock-profile-data";
 
 interface ProfileRoutePageProps {
   params: Promise<{ userId: string }>;
@@ -29,7 +28,7 @@ const mapBackendToProfile = (
       location: user.location,
       website: undefined,
     },
-    friendsCount: 0,
+    friendsCount: user.friendsCount ?? 0,
     postsCount: posts.length,
     isFriend,
     posts,
@@ -75,10 +74,8 @@ const ProfileRoutePage = async ({ params }: ProfileRoutePageProps) => {
     );
     targetProfileId = friendshipInfo.id || userId;
   } catch (error) {
-    // Fallback to mock data if API fails
     console.error("Failed to fetch user profile:", error);
-    userProfile = getMockProfile(userId);
-    targetProfileId = userId;
+    notFound();
   }
 
   return (
