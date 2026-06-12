@@ -226,22 +226,22 @@ export const DirectChatItem = ({
 
           {!fileUrl && !isEditing && (
             <p
-              ref={contentRef}
-              className={cn(
-                "text-sm text-zinc-700 dark:text-zinc-200 break-words break-all mr-1 leading-relaxed",
-                isOwner ? "ml-24" : "mr-24",
-                !expanded && "line-clamp-2",
-                deleted &&
-                  "italic text-zinc-500 dark:text-zinc-400 text-xs mt-1",
-              )}
-            >
-              {localContent}
-              {!deleted && isUpdated && status === "sent" && !isEditing && (
-                <span className="text-[10px] mx-2 text-indigo-600 dark:text-indigo-400 font-medium">
-                  (edited)
-                </span>
-              )}
-            </p>
+                ref={contentRef}
+                className={cn(
+                  "text-sm text-zinc-700 dark:text-zinc-200 break-words mr-1 leading-relaxed",
+                  isOwner ? "ml-24" : "mr-24",
+                  !expanded && "line-clamp-2",
+                  deleted &&
+                    "italic text-zinc-500 dark:text-zinc-400 text-xs mt-1",
+                )}
+              >
+                {localContent}
+                {!deleted && isUpdated && status === "sent" && !isEditing && (
+                  <span className="text-[10px] mx-2 text-indigo-600 dark:text-indigo-400 font-medium">
+                    (edited)
+                  </span>
+                )}
+              </p>
           )}
 
           {!fileUrl && !isEditing && (isOverflowing || expanded) && (

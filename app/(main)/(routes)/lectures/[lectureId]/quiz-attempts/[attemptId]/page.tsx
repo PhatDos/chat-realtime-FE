@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
-import { useLectureService, type AssessmentAttempt } from "@/services/lectures/lecture.service";
+import { useLectureService, type QuizAttempt } from "@/services/lectures/lecture.service";
 import { LoadingOverlay } from "@/components/common/loading-overlay";
 
 interface QuestionSnapshotOption {
@@ -25,7 +25,7 @@ interface QuestionSnapshot {
   options?: QuestionSnapshotOption[];
 }
 
-export default function AssessmentAttemptDetailPage() {
+export default function QuizAttemptDetailPage() {
   const { lectureId, attemptId } = useParams<{ lectureId: string; attemptId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +34,7 @@ export default function AssessmentAttemptDetailPage() {
   const channelId = searchParams.get("channelId") ?? "";
   const memberId = searchParams.get("memberId") ?? "";
 
-  const [attempt, setAttempt] = useState<AssessmentAttempt | null>(null);
+  const [attempt, setAttempt] = useState<QuizAttempt | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -43,7 +43,7 @@ export default function AssessmentAttemptDetailPage() {
 
     const loadAttempt = async () => {
       try {
-        const data = await lectureService.getAssessmentAttempt(attemptId);
+        const data = await lectureService.getQuizAttempt(attemptId);
         if (mounted) {
           setAttempt(data);
         }
@@ -89,7 +89,7 @@ export default function AssessmentAttemptDetailPage() {
     return (
       <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-6">
         <Card className="border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/30 backdrop-blur-xl">
-          <p className="text-slate-300">Assessment attempt not found</p>
+          <p className="text-slate-300">Quiz attempt not found</p>
           <div className="mt-4">
             <Button onClick={handleBack} disabled={isNavigating} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
               Back
@@ -100,8 +100,8 @@ export default function AssessmentAttemptDetailPage() {
     );
   }
 
-  const totalQuestions = attempt.assessment?.totalQuestions ?? 0;
-  const totalPoints = attempt.assessment?.totalPoints ?? attempt.assessment?.questions?.reduce((sum, question) => sum + (question.points ?? 0), 0) ?? 0;
+  const totalQuestions = attempt.quiz?.totalQuestions ?? 0;
+  const totalPoints = attempt.quiz?.totalPoints ?? attempt.quiz?.questions?.reduce((sum, question) => sum + (question.points ?? 0), 0) ?? 0;
   const finalPoints = attempt.finalScore ?? 0;
   const score = attempt.scorePercent ?? (totalPoints > 0 ? (finalPoints / totalPoints) * 100 : 0);
 
@@ -150,8 +150,8 @@ export default function AssessmentAttemptDetailPage() {
         <Card className="border border-white/10 bg-white/5 p-6 rounded-2xl shadow-2xl shadow-black/30 backdrop-blur-xl space-y-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="text-sm text-slate-400">Assessment</p>
-              <h1 className="text-3xl font-bold text-white">{attempt.assessment?.title ?? "Assessment attempt"}</h1>
+              <p className="text-sm text-slate-400">Quiz</p>
+              <h1 className="text-3xl font-bold text-white">{attempt.quiz?.title ?? "Quiz attempt"}</h1>
               <p className="text-sm text-slate-300 mt-1">
                 Status: {attempt.status ?? "SUBMITTED"} · Questions: {totalQuestions}
               </p>
@@ -183,8 +183,8 @@ export default function AssessmentAttemptDetailPage() {
         <div className="space-y-4">
           {answers.map((answer, index) => {
             const snapshot = answer.questionSnapshot as QuestionSnapshot | undefined;
-            const options = snapshot?.options ?? attempt.assessment?.questions?.find((q) => q.id === answer.questionId)?.options ?? [];
-            const questionPoints = snapshot?.points ?? attempt.assessment?.questions?.find((q) => q.id === answer.questionId)?.points ?? 0;
+            const options = snapshot?.options ?? attempt.quiz?.questions?.find((q) => q.id === answer.questionId)?.options ?? [];
+            const questionPoints = snapshot?.points ?? attempt.quiz?.questions?.find((q) => q.id === answer.questionId)?.points ?? 0;
             const earnedPoints = answer.finalPoints ?? answer.autoPoints ?? 0;
             const selectedOption = options.find((option) => option.id === answer.selectedOptionId);
             const correctOption = options.find((option) => option.isCorrect);

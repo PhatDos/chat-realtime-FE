@@ -3,9 +3,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/common/user-avatar";
-import { Check, X } from "lucide-react";
+import { Check, X, Loader2, Bell } from "lucide-react";
 import { useApiClient } from "@/hooks/use-api-client";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,12 +28,14 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
   const { toast } = useToast();
   const router = useRouter();
 
-  const incomingQuery = useQuery<FriendRequestListItemDto[]>(["friend-requests", "incoming"], async () => {
-    return getIncomingFriendRequests(api);
+  const incomingQuery = useQuery<FriendRequestListItemDto[]>({
+    queryKey: ["friend-requests", "incoming"],
+    queryFn: async () => getIncomingFriendRequests(api),
   });
 
-  const sentQuery = useQuery<FriendRequestListItemDto[]>(["friend-requests", "sent"], async () => {
-    return getSentFriendRequests(api);
+  const sentQuery = useQuery<FriendRequestListItemDto[]>({
+    queryKey: ["friend-requests", "sent"],
+    queryFn: async () => getSentFriendRequests(api),
   });
 
   const syncAcceptedFriendship = (request: FriendRequestListItemDto) => {
@@ -115,16 +116,18 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
     mutationFn: (request: FriendRequestListItemDto) => acceptFriendRequest(api, request.id),
     onSuccess: async (_result, request) => {
       syncAcceptedFriendship(request);
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming"] });
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] });
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] });
-      await queryClient.invalidateQueries({ queryKey: ["friend-status"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming"] }),
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] }),
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] }),
+        queryClient.invalidateQueries({ queryKey: ["friend-status"] }),
+        queryClient.invalidateQueries({ queryKey: ["friends"] }),
+      ]);
       {
         const actorName = request.actorProfile?.name ?? request.fromProfileId;
-        const otherName = request.actorProfile?.id === request.fromProfileId ? request.toProfileId : request.fromProfileId;
         toast({
           title: "Friend request accepted",
-          description: `${actorName} and ${otherName} are now friends.`,
+          description: `${actorName} and you are now friends.`,
           variant: "success",
         });
       }
@@ -135,9 +138,11 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
     mutationFn: (request: FriendRequestListItemDto) => rejectFriendRequest(api, request.id),
     onSuccess: async (_result, request) => {
       syncRejectedOrCanceledFriendship(request);
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming"] });
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] });
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming"] }),
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] }),
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] }),
+      ]);
       {
         const actorName = request.actorProfile?.name ?? request.fromProfileId;
         toast({
@@ -153,8 +158,10 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
     mutationFn: (request: FriendRequestListItemDto) => cancelFriendRequest(api, request.id),
     onSuccess: async (_result, request) => {
       syncRejectedOrCanceledFriendship(request);
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] });
-      await queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] }),
+        queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] }),
+      ]);
       {
         const targetName = request.actorProfile?.name ?? request.toProfileId ?? request.fromProfileId;
         toast({
@@ -168,6 +175,8 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
 
   const incomingRequests = incomingQuery.data || [];
   const sentRequests = sentQuery.data || [];
+
+  const isAnyPending = acceptMutation.isPending || rejectMutation.isPending || cancelMutation.isPending;
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -184,82 +193,107 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
   };
 
   return (
-    <div className="flex flex-col h-96 bg-white dark:bg-zinc-900 rounded-lg">
+    <div className="flex flex-col h-[400px] w-80 bg-gradient-to-br from-white to-zinc-50 dark:from-[#1e1f22] dark:to-[#111113] rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/80 overflow-hidden transition-all duration-300">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
-        <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-50">Notifications</h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">Friend requests and updates</p>
+      <div className="px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80 bg-white/50 dark:bg-[#1e1f22]/50 backdrop-blur-sm flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5">
+            <Bell className="h-4 w-4 text-indigo-500" />
+            Notifications
+          </h3>
+          <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">Friend requests and updates</p>
+        </div>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="incoming" className="flex-1 flex flex-col border-t border-zinc-200 dark:border-zinc-700">
-        <TabsList className="grid w-full grid-cols-2 rounded-none border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
-          <TabsTrigger value="incoming" className="rounded-none data-[state=active]:border-blue-500 text-zinc-700 dark:text-zinc-300">
+      <Tabs defaultValue="incoming" className="flex-1 flex flex-col m-0 overflow-hidden border-0">
+        <TabsList className="grid w-full grid-cols-2 h-10 p-1 bg-zinc-100/50 dark:bg-[#111113]/55 border-b border-zinc-100 dark:border-zinc-800/50 rounded-none">
+          <TabsTrigger
+            value="incoming"
+            className="rounded-lg font-semibold text-xs py-1.5 transition-all duration-200 data-[state=active]:bg-white dark:data-[state=active]:bg-[#2b2d31] data-[state=active]:shadow-sm data-[state=active]:text-indigo-500 dark:data-[state=active]:text-indigo-400 text-zinc-500 dark:text-zinc-400"
+          >
             Incoming
             {incomingRequests.length > 0 && (
-              <span className="ml-1 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{incomingRequests.length}</span>
+              <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full leading-none">
+                {incomingRequests.length}
+              </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="sent" className="rounded-none data-[state=active]:border-blue-500 text-zinc-700 dark:text-zinc-300">
+          <TabsTrigger
+            value="sent"
+            className="rounded-lg font-semibold text-xs py-1.5 transition-all duration-200 data-[state=active]:bg-white dark:data-[state=active]:bg-[#2b2d31] data-[state=active]:shadow-sm data-[state=active]:text-indigo-500 dark:data-[state=active]:text-indigo-400 text-zinc-500 dark:text-zinc-400"
+          >
             Sent
             {sentRequests.length > 0 && (
-              <span className="ml-1 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded-full">{sentRequests.length}</span>
+              <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-indigo-500 text-white rounded-full leading-none">
+                {sentRequests.length}
+              </span>
             )}
           </TabsTrigger>
         </TabsList>
 
         {/* Incoming Requests Tab */}
-        <TabsContent value="incoming" className="flex flex-col m-0">
+        <TabsContent value="incoming" className="flex-1 flex flex-col m-0 overflow-hidden data-[state=inactive]:hidden">
           {incomingRequests.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-8">
-              <div className="text-zinc-600 dark:text-zinc-400">
-                <p className="text-sm font-medium">No incoming requests</p>
-                <p className="text-xs mt-1">When someone sends you a friend request, it will appear here</p>
-              </div>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">No incoming requests</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 max-w-[200px]">
+                When someone sends you a friend request, it will appear here.
+              </p>
             </div>
           ) : (
             <ScrollArea className="flex-1">
               <div className="p-3 space-y-2">
                 {incomingRequests.map((request) => {
                   const itemKey = request.id ?? `${request.fromProfileId}:${request.toProfileId}:${request.createdAt}`;
+                  const isAccepting = acceptMutation.isPending && acceptMutation.variables?.id === request.id;
+                  const isRejecting = rejectMutation.isPending && rejectMutation.variables?.id === request.id;
+
                   return (
-                    <div key={itemKey}>
-                      <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                        <UserAvatar src={request.actorProfile?.imageUrl} className="h-8 w-8" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-50">{request.actorProfile?.name ?? request.fromProfileId}</p>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400">{formatTime(new Date(request.createdAt))}</p>
-                        </div>
-                        <div className="flex gap-1.5">
-                          <Button
-                            size="sm"
-                            className="h-8 w-8 p-0 bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 hover:scale-110 active:scale-95 focus:ring-2 focus:ring-green-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-800"
-                            onClick={() => {
-                              if (!request.id) {
-                                console.warn("accept: missing request id", request);
-                                return;
-                              }
-                              acceptMutation.mutate(request);
-                            }}
-                          >
-                            <Check className="h-4 w-4 font-bold" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="h-8 w-8 p-0 border-2 border-red-400 hover:border-red-500 bg-white dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 hover:text-red-600 shadow-sm hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:ring-2 focus:ring-red-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-900"
-                            onClick={() => {
-                              if (!request.id) {
-                                console.warn("reject: missing request id", request);
-                                return;
-                              }
-                              rejectMutation.mutate(request);
-                            }}
-                          >
-                            <X className="h-4 w-4 font-bold" />
-                          </Button>
-                        </div>
+                    <div key={itemKey} className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 border border-transparent hover:border-zinc-200/10 dark:hover:border-zinc-700/10 transition-all duration-200">
+                      <div className="relative">
+                        <UserAvatar src={request.actorProfile?.imageUrl} className="h-9 w-9 shadow-sm" />
                       </div>
-                      <Separator className="mt-2" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate text-zinc-950 dark:text-zinc-50">
+                          {request.actorProfile?.name ?? request.fromProfileId}
+                        </p>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium mt-0.5">
+                          {formatTime(new Date(request.createdAt))}
+                        </p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button
+                          size="sm"
+                          disabled={isAnyPending}
+                          className="h-8 w-8 p-0 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-200 active:scale-90"
+                          onClick={() => {
+                            if (!request.id) return;
+                            acceptMutation.mutate(request);
+                          }}
+                        >
+                          {isAccepting ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={isAnyPending}
+                          className="h-8 w-8 p-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#2b2d31] hover:bg-red-50 dark:hover:bg-red-950/20 text-zinc-500 hover:text-red-500 dark:text-zinc-400 transition-all duration-200 active:scale-90"
+                          onClick={() => {
+                            if (!request.id) return;
+                            rejectMutation.mutate(request);
+                          }}
+                        >
+                          {isRejecting ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-red-500" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
@@ -269,42 +303,48 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
         </TabsContent>
 
         {/* Sent Requests Tab */}
-        <TabsContent value="sent" className="flex flex-col m-0">
+        <TabsContent value="sent" className="flex-1 flex flex-col m-0 overflow-hidden data-[state=inactive]:hidden">
           {sentRequests.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-8">
-              <div className="text-zinc-600 dark:text-zinc-400">
-                  <p className="text-sm font-medium">No sent requests</p>
-                  <p className="text-xs mt-1">Friend requests you have sent will appear here</p>
-                </div>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">No sent requests</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 max-w-[200px]">
+                Friend requests you have sent will appear here.
+              </p>
             </div>
           ) : (
             <ScrollArea className="flex-1">
               <div className="p-3 space-y-2">
                 {sentRequests.map((request) => {
                   const itemKey = request.id ?? `${request.fromProfileId}:${request.toProfileId}:${request.createdAt}`;
+                  const isCanceling = cancelMutation.isPending && cancelMutation.variables?.id === request.id;
+
                   return (
-                    <div key={itemKey}>
-                      <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                        <UserAvatar src={request.actorProfile?.imageUrl} className="h-8 w-8" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-50">{request.actorProfile?.name ?? request.toProfileId}</p>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400">{formatTime(new Date(request.createdAt))}</p>
-                        </div>
-                        <Button
-                          size="sm"
-                          className="h-8 px-2 text-xs font-medium border-2 border-amber-400 hover:border-amber-500 bg-white dark:bg-zinc-800 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 hover:text-amber-700 shadow-sm hover:shadow-lg hover:shadow-amber-500/30 transition-all duration-300 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-amber-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-900"
-                          onClick={() => {
-                            if (!request.id) {
-                              console.warn("cancel: missing request id", request);
-                              return;
-                            }
-                            cancelMutation.mutate(request);
-                          }}
-                        >
-                          Cancel
-                        </Button>
+                    <div key={itemKey} className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 border border-transparent hover:border-zinc-200/10 dark:hover:border-zinc-700/10 transition-all duration-200">
+                      <div className="relative">
+                        <UserAvatar src={request.actorProfile?.imageUrl} className="h-9 w-9 shadow-sm" />
                       </div>
-                      <Separator className="mt-2" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate text-zinc-950 dark:text-zinc-50">
+                          {request.actorProfile?.name ?? request.toProfileId}
+                        </p>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium mt-0.5">
+                          Sent {formatTime(new Date(request.createdAt))}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={isAnyPending}
+                        className="h-8 px-3 rounded-lg text-xs font-semibold border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#2b2d31] hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-all duration-200 active:scale-95 shrink-0"
+                        onClick={() => {
+                          if (!request.id) return;
+                          cancelMutation.mutate(request);
+                        }}
+                      >
+                        {isCanceling ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : null}
+                        {isCanceling ? "Canceling" : "Cancel"}
+                      </Button>
                     </div>
                   );
                 })}
@@ -315,9 +355,9 @@ export const NotificationPopoverContent = ({ onClose }: NotificationPopoverConte
       </Tabs>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-700 bg-gradient-to-r from-zinc-50 to-blue-50 dark:from-zinc-800 dark:to-blue-900/20">
-        <Button 
-          className="w-full text-xs font-medium h-8 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-800" 
+      <div className="p-3 border-t border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/40 backdrop-blur-sm">
+        <Button
+          className="w-full text-xs font-semibold h-9 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg active:scale-95 transition-all duration-300 focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500"
           onClick={() => {
             onClose?.();
             router.push("/friend-requests");

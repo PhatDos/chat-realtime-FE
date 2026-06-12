@@ -284,7 +284,7 @@ export const ChannelChatItem = React.memo(
                   <p
                     ref={contentRef}
                     className={cn(
-                      "text-sm text-zinc-700 dark:text-zinc-200 break-words break-all mr-1 leading-relaxed",
+                      "text-sm text-zinc-700 dark:text-zinc-200 break-words mr-1 leading-relaxed whitespace-pre-wrap",
                       isOwner ? "ml-24" : "mr-24",
                       !expanded && "line-clamp-2",
                       deleted &&

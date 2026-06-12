@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { usePresence } from "@/hooks/use-presence";
@@ -42,39 +43,32 @@ interface FriendListProps {
 }
 
 export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
-  const [friends, setFriends] = useState<Friend[]>(initialFriends || []);
-  const [loading, setLoading] = useState(!initialFriends);
-  const [error, setError] = useState<string | null>(null);
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+
+  const { data: friendsData, isLoading: loading, error: friendsError } = useQuery({
+    queryKey: ["friends"],
+    queryFn: async () => {
+      const response = await apiClient.get<ApiResponse<FriendListResponse>>("/friends");
+      return response.data.items || [];
+    },
+    initialData: initialFriends,
+    staleTime: 1000 * 60, // 1 minute stale time
+  });
+
+  const friends = friendsData || [];
+  const error = friendsError instanceof Error ? friendsError.message : null;
+
   const [removingFriendId, setRemovingFriendId] = useState<string | null>(null);
   const [publicServers, setPublicServers] = useState<ServerDiscoverySummary[]>([]);
   const [serversLoading, setServersLoading] = useState(true);
   const [serversError, setServersError] = useState<string | null>(null);
 
-  const apiClient = useApiClient();
   const router = useRouter();
   const { toast } = useToast();
   const profileIds = friends.map((f) => f.profileId);
   const { presence } = usePresence(profileIds);
   const [isPending, startTransition] = useTransition();
-  useEffect(() => {
-    if (initialFriends) return; // Skip if already provided
-
-    const fetchFriends = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get<ApiResponse<FriendListResponse>>("/friends");
-        setFriends(response.data.items || []);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load friends";
-        setError(message);
-        console.error("Failed to fetch friends:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFriends();
-  }, [apiClient, initialFriends]);
 
   useEffect(() => {
     let active = true;
@@ -127,7 +121,7 @@ export const FriendList = ({ friends: initialFriends }: FriendListProps) => {
     try {
       setRemovingFriendId(profileId);
       await unfriend(apiClient, profileId);
-      setFriends((current) => current.filter((friend) => friend.profileId !== profileId));
+      await queryClient.invalidateQueries({ queryKey: ["friends"] });
       toast({
         title: "Friend removed",
         description: `You are no longer friends with ${name}`,

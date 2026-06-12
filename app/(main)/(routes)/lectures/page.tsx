@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   useLectureService,
-  type ChannelLeaderboardAssessment,
+  type ChannelLeaderboardQuiz,
   type ChannelLeaderboardEntry,
   type ChannelLeaderboardResponse,
   type Lecture,
@@ -26,7 +26,7 @@ type LeaderboardMode = "gradebook" | "leaderboard";
 
 type LeaderboardRow = ChannelLeaderboardEntry & {
   completedCount: number;
-  averageScore: number | null;
+  averageScore: number;
 };
 
 export default function UploadLecturePage() {
@@ -85,7 +85,7 @@ export default function UploadLecturePage() {
       setLeaderboardLoading(true);
 
       try {
-        const data = await lectureService.getAssessmentLeaderboard(channelId);
+        const data = await lectureService.getQuizLeaderboard(channelId);
         if (mounted) {
           setLeaderboard(data);
         }
@@ -110,18 +110,19 @@ export default function UploadLecturePage() {
       ? `/servers/${encodeURIComponent(serverId)}/channels/${encodeURIComponent(channelId)}`
       : "/lectures";
 
-  const leaderboardAssessments: ChannelLeaderboardAssessment[] = leaderboard?.assessments ?? [];
+  const leaderboardquizzes: ChannelLeaderboardQuiz[] = leaderboard?.quizzes ?? [];
   const leaderboardEntries: ChannelLeaderboardEntry[] = leaderboard?.entries ?? [];
   const leaderboardChannelName = channelName || leaderboard?.channelName || channelId;
 
   const leaderboardRows: LeaderboardRow[] = leaderboardEntries.map((entry) => {
-    const completedCount = entry.assignmentScores.filter((score) => score.scorePercent != null).length;
-    const totalScore = entry.assignmentScores.reduce((sum, score) => sum + (score.scorePercent ?? 0), 0);
+    const completedCount = entry.quizScores.filter((score) => score.scorePercent != null).length;
+    const totalScore = entry.quizScores.reduce((sum, score) => sum + (score.scorePercent ?? 0), 0);
+    const totalQuizzes = leaderboardquizzes.length || entry.quizScores.length;
 
     return {
       ...entry,
       completedCount,
-      averageScore: completedCount > 0 ? totalScore / completedCount : null,
+      averageScore: totalQuizzes > 0 ? totalScore / totalQuizzes : 0,
     };
   });
 
@@ -269,7 +270,7 @@ export default function UploadLecturePage() {
                   </h2>
                   <p className="text-sm text-slate-400">
                     {leaderboardMode === "gradebook"
-                      ? `Channel: ${leaderboardChannelName} · per-assignment view`
+                      ? `Channel: ${leaderboardChannelName} · per-quiz view`
                       : `Channel: ${leaderboardChannelName} · ranked by average score`}
                   </p>
                 </div>
@@ -308,17 +309,17 @@ export default function UploadLecturePage() {
                   <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
                   Loading leaderboard...
                 </div>
-              ) : leaderboardAssessments.length > 0 ? (
+              ) : leaderboardquizzes.length > 0 ? (
                 leaderboardMode === "gradebook" ? (
                   <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
-                    <table className="min-w-full divide-y divide-white/10 text-left text-sm">
+                    <table className="min-w-full divide-y divide-white/10 text-center text-sm">
                       <thead className="bg-white/5 text-slate-300">
                         <tr>
                           <th className="px-4 py-3 font-medium">#</th>
                           <th className="px-4 py-3 font-medium">Name</th>
-                          {leaderboardAssessments.map((assessment) => (
-                            <th key={assessment.id} className="px-4 py-3 font-medium whitespace-nowrap">
-                              {assessment.title}
+                          {leaderboardquizzes.map((quiz) => (
+                            <th key={quiz.id} className="px-4 py-3 font-medium whitespace-nowrap">
+                              {quiz.title}
                             </th>
                           ))}
                           <th className="px-4 py-3 font-medium whitespace-nowrap">Avg Score</th>
@@ -333,8 +334,8 @@ export default function UploadLecturePage() {
                                 {entry.member?.profile?.name ?? entry.memberId}
                               </div>
                             </td>
-                            {entry.assignmentScores.map((score) => (
-                              <td key={score.assessmentId} className="px-4 py-3 text-slate-200 whitespace-nowrap">
+                            {entry.quizScores.map((score) => (
+                              <td key={score.quizId} className="px-4 py-3 text-slate-200 whitespace-nowrap">
                                 {score.scorePercent == null ? (
                                   <span className="text-slate-500">Not attempted</span>
                                 ) : (
@@ -343,7 +344,7 @@ export default function UploadLecturePage() {
                               </td>
                             ))}
                             <td className="px-4 py-3 font-semibold text-cyan-200 whitespace-nowrap">
-                              {entry.averageScore == null ? "Not attempted" : `${entry.averageScore.toFixed(1)}%`}
+                              {`${entry.averageScore.toFixed(1)}%`}
                             </td>
                           </tr>
                         ))}
@@ -352,7 +353,7 @@ export default function UploadLecturePage() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
-                    <table className="min-w-full divide-y divide-white/10 text-left text-sm">
+                    <table className="min-w-full divide-y divide-white/10 text-center text-sm">
                       <thead className="bg-white/5 text-slate-300">
                         <tr>
                           <th className="px-4 py-3 font-medium">Rank</th>
@@ -371,7 +372,7 @@ export default function UploadLecturePage() {
                               </div>
                             </td>
                             <td className="px-4 py-3 font-semibold text-cyan-200 whitespace-nowrap">
-                              {entry.averageScore == null ? "Not attempted" : `${entry.averageScore.toFixed(1)}%`}
+                              {`${entry.averageScore.toFixed(1)}%`}
                             </td>
                             <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{entry.completedCount}</td>
                           </tr>

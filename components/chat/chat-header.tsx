@@ -1,9 +1,11 @@
 import { Hash } from 'lucide-react'
+import Link from 'next/link'
 import { MobileToggle } from '../common/mobile-toggle'
 import { ConversationMobileToggle } from '../common/conversation-mobile-toggle'
 import { ProfileHoverCard } from '../common/profile-hover-card'
 import { SocketIndicator } from '../common/socket-indicator'
 import { ChatVideoButton } from './chat-video-button'
+import { ChatNewsfeedButton } from './chat-newsfeed-button'
 import { ConversationWithProfiles } from '@/types/api/message'
 
 interface ChatHeaderProps {
@@ -14,6 +16,7 @@ interface ChatHeaderProps {
   otherProfileId?: string
   conversations?: ConversationWithProfiles[]
   currentProfileId?: string
+  activeTab?: 'messages' | 'polls'
 }
 export const ChatHeader = ({
   serverId,
@@ -22,8 +25,11 @@ export const ChatHeader = ({
   imageUrl,
   otherProfileId,
   conversations,
-  currentProfileId
+  currentProfileId,
+  activeTab = 'messages'
 }: ChatHeaderProps) => {
+  const isChannel = type !== 'conversation'
+
   return (
     <div
       className='text-md font-semibold px-3 flex items-center h-12
@@ -51,7 +57,32 @@ export const ChatHeader = ({
         />
       )}
       <p className='font-semibold text-md text-black dark:text-white'>{name}</p>
-      <div className='ml-auto flex items-center'>
+      <div className='ml-auto flex items-center gap-2'>
+        {isChannel && (
+          <div className='hidden md:!flex items-center rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900'>
+            <Link
+              href='?tab=messages'
+              className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                activeTab === 'messages'
+                  ? 'bg-white text-indigo-600 shadow-sm dark:bg-zinc-800 dark:text-indigo-300'
+                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+              }`}
+            >
+              Messages
+            </Link>
+            <Link
+              href='?tab=polls'
+              className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                activeTab === 'polls'
+                  ? 'bg-white text-indigo-600 shadow-sm dark:bg-zinc-800 dark:text-indigo-300'
+                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+              }`}
+            >
+              Polls
+            </Link>
+          </div>
+        )}
+        <ChatNewsfeedButton />
         {type === 'conversation' && <ChatVideoButton />}
         <SocketIndicator />
       </div>

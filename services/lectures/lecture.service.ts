@@ -16,7 +16,7 @@ export interface Lecture {
   updatedAt: string;
   summary?: Summary | null;
   flashcardSet?: FlashcardSet | null;
-  assessment?: Assessment | null;
+  quiz?: Quiz | null;
 }
 
 export interface LectureFileRow {
@@ -52,14 +52,14 @@ export interface FlashcardSet {
   flashcards?: Flashcard[];
 }
 
-export interface Assessment {
+export interface Quiz {
   id: string;
   lectureId?: string | null;
   channelId: string;
   createdById: string;
   title: string;
   description?: string | null;
-  type: 'QUIZ' | 'ASSIGNMENT';
+  type: 'QUIZ';
   generatedByAI: boolean;
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
   totalQuestions: number;
@@ -71,20 +71,20 @@ export interface Assessment {
   createdAt: string;
   updatedAt?: string;
   isDraft?: boolean;
-  questions?: AssessmentQuestion[];
-  attempts?: AssessmentAttempt[];
+  questions?: QuizQuestion[];
+  attempts?: QuizAttempt[];
 }
 
-export interface AssessmentQuestion {
+export interface QuizQuestion {
   id: string;
-  assessmentId: string;
+  quizId: string;
   order: number;
   questionText: string;
   type: 'MULTIPLE_CHOICE' | 'MULTI_SELECT' | 'TRUE_FALSE' | 'ESSAY';
   points: number;
   explanation?: string;
-  options: AssessmentOption[];
-  answers?: AssessmentAnswer[];
+  options: QuizOption[];
+  answers?: QuizAnswer[];
 }
 
 export interface StudentQuizOption {
@@ -96,7 +96,7 @@ export interface StudentQuizOption {
 
 export interface StudentQuizQuestion {
   id: string;
-  assessmentId: string;
+  quizId: string;
   order: number;
   questionText: string;
   type: 'MULTIPLE_CHOICE' | 'MULTI_SELECT' | 'TRUE_FALSE' | 'ESSAY';
@@ -111,7 +111,7 @@ export interface StudentQuiz {
   createdById: string;
   title: string;
   description?: string | null;
-  type: 'QUIZ' | 'ASSIGNMENT';
+  type: 'QUIZ';
   generatedByAI: boolean;
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
   totalQuestions: number;
@@ -125,7 +125,9 @@ export interface StudentQuiz {
   questions: StudentQuizQuestion[];
 }
 
-export interface AssessmentOption {
+export type StudentQuizQuiz = StudentQuiz;
+
+export interface QuizOption {
   id: string;
   questionId: string;
   order: number;
@@ -133,7 +135,7 @@ export interface AssessmentOption {
   isCorrect: boolean;
 }
 
-export interface AssessmentAnswer {
+export interface QuizAnswer {
   id: string;
   attemptId: string;
   questionId: string;
@@ -148,15 +150,10 @@ export interface AssessmentAnswer {
   questionSnapshot?: unknown;
 }
 
-export type Quiz = Assessment;
-export type QuizQuestion = AssessmentQuestion;
-export type QuizOption = AssessmentOption;
-export type QuizAttempt = AssessmentAttempt;
-export type StudentQuizAssessment = StudentQuiz;
 
-export interface AssessmentAttempt {
+export interface QuizAttempt {
   id: string;
-  assessmentId: string;
+  quizId: string;
   memberId: string;
   startedAt?: string;
   submittedAt?: string | null;
@@ -170,20 +167,20 @@ export interface AssessmentAttempt {
   gradedAt?: string | null;
   gradedById?: string | null;
   createdAt: string;
-  answers?: AssessmentAnswer[];
-  assessment?: Assessment;
+  answers?: QuizAnswer[];
+  quiz?: Quiz;
   member?: MemberWithProfileResponse;
   gradedBy?: MemberWithProfileResponse | null;
 }
 
-export interface ChannelLeaderboardAssignmentScore {
-  assessmentId: string;
+export interface ChannelLeaderboardQuizScore {
+  quizId: string;
   scorePercent: number | null;
   finalScore: number | null;
   submittedAt: string | null;
 }
 
-export interface ChannelLeaderboardAssessment {
+export interface ChannelLeaderboardQuiz {
   id: string;
   title: string;
   createdAt: string;
@@ -192,7 +189,7 @@ export interface ChannelLeaderboardAssessment {
 export interface ChannelLeaderboardEntry {
   memberId: string;
   member: MemberWithProfileResponse | null;
-  assignmentScores: ChannelLeaderboardAssignmentScore[];
+  quizScores: ChannelLeaderboardQuizScore[];
   totalScore: number;
   lastActivityAt?: string | null;
 }
@@ -200,13 +197,13 @@ export interface ChannelLeaderboardEntry {
 export interface ChannelLeaderboardResponse {
   channelId: string;
   channelName: string;
-  assessments: ChannelLeaderboardAssessment[];
+  quizzes: ChannelLeaderboardQuiz[];
   entries: ChannelLeaderboardEntry[];
 }
 
-export interface SubmitAssessmentAttemptResponse {
+export interface SubmitQuizAttemptResponse {
   success: boolean;
-  attempt: AssessmentAttempt;
+  attempt: QuizAttempt;
   score: number;
   scorePercent?: number;
   correctCount: number;
@@ -235,11 +232,11 @@ export interface GenerateQuizPayload {
   questionCount: number;
 }
 
-export interface CreateAssessmentPayload {
+export interface CreateQuizPayload {
   title: string;
   description?: string | null;
-  type?: Assessment['type'];
-  status?: Assessment['status'];
+  type?: Quiz['type'];
+  status?: Quiz['status'];
   totalPoints?: number;
   durationMinutes?: number | null;
   allowLateSubmission?: boolean;
@@ -247,7 +244,7 @@ export interface CreateAssessmentPayload {
   generatedByAI?: boolean;
   questions: Array<{
     questionText: string;
-    type?: AssessmentQuestion['type'];
+    type?: QuizQuestion['type'];
     points?: number;
     explanation?: string | null;
     order?: number;
@@ -330,22 +327,21 @@ export function useLectureService() {
       generateQuiz: async (lectureId: string, payload: GenerateQuizPayload) => {
         return apiClient.post<{
           success: boolean;
-          assessment: Assessment;
-          quiz: Assessment;
+          quiz: Quiz;
           message: string;
-        }>(`/lectures/${lectureId}/generate/assessment`, payload);
+        }>(`/lectures/${lectureId}/generate/quiz`, payload);
       },
 
-      createAssessment: async (lectureId: string, payload: CreateAssessmentPayload) => {
-        return apiClient.post<Assessment>(`/lectures/${lectureId}/assessment`, payload);
+      createQuiz: async (lectureId: string, payload: CreateQuizPayload) => {
+        return apiClient.post<Quiz>(`/lectures/${lectureId}/quiz`, payload);
       },
 
-      getAssessmentAttempt: async (attemptId: string) => {
-        return apiClient.get<AssessmentAttempt>(`/lectures/assessment/attempts/${attemptId}`);
+      getQuizAttempt: async (attemptId: string) => {
+        return apiClient.get<QuizAttempt>(`/lectures/quiz/attempts/${attemptId}`);
       },
 
-      startAssessmentAttempt: async (assessmentId: string, memberId: string) => {
-        return apiClient.post<AssessmentAttempt>(`/lectures/assessment/${assessmentId}/attempt/start`, {
+      startQuizAttempt: async (quizId: string, memberId: string) => {
+        return apiClient.post<QuizAttempt>(`/lectures/quiz/${quizId}/attempt/start`, {
           memberId,
         });
       },
@@ -360,41 +356,32 @@ export function useLectureService() {
       /**
        * Get quizzes for a lecture
        */
-      getAssessments: async (lectureId: string) => {
-        return apiClient.get<Assessment[]>(`/lectures/${lectureId}/assessments`);
+      getquizzes: async (lectureId: string) => {
+        return apiClient.get<Quiz[]>(`/lectures/${lectureId}/quizzes`);
       },
 
-      getQuizzes: async (lectureId: string) => {
-        return apiClient.get<Assessment[]>(`/lectures/${lectureId}/quizzes`);
-      },
 
       /**
        * Submit quiz attempt
        */
-      submitAssessmentAttempt: async (
-        assessmentId: string,
+      submitQuizAttempt: async (
+        quizId: string,
         memberId: string,
-        answers: Record<string, string>
-      ): Promise<SubmitAssessmentAttemptResponse> => {
-        return apiClient.post<SubmitAssessmentAttemptResponse>(`/lectures/assessment/${assessmentId}/attempt`, {
+        answers: Record<string, string>,
+      ) => {
+        return apiClient.post<SubmitQuizAttemptResponse>(`/lectures/quiz/${quizId}/attempt`, {
           memberId,
           answers,
         });
       },
 
-      submitQuizAttempt: async (quizId: string, memberId: string, answers: Record<string, string>) => {
-        return apiClient.post<SubmitAssessmentAttemptResponse>(`/lectures/quiz/${quizId}/attempt`, {
-          memberId,
-          answers,
-        });
+
+      updateQuiz: async (quizId: string, payload: Partial<Quiz>) => {
+        return apiClient.patch<Quiz>(`/lectures/quiz/${quizId}`, payload);
       },
 
-      updateAssessment: async (assessmentId: string, payload: Partial<Assessment>) => {
-        return apiClient.patch<Assessment>(`/lectures/assessment/${assessmentId}`, payload);
-      },
-
-      addAssessmentQuestion: async (
-        assessmentId: string,
+      addQuizQuestion: async (
+        quizId: string,
         payload: {
           questionText: string;
           type?: 'MULTIPLE_CHOICE' | 'MULTI_SELECT' | 'TRUE_FALSE' | 'ESSAY';
@@ -404,12 +391,12 @@ export function useLectureService() {
           order?: number;
         }
       ) => {
-        return apiClient.post<AssessmentQuestion>(`/lectures/assessment/${assessmentId}/questions`, payload);
+        return apiClient.post<QuizQuestion>(`/lectures/quiz/${quizId}/questions`, payload);
       },
 
-      updateAssessmentQuestion: async (
+      updateQuizQuestion: async (
         questionId: string,
-        payload: Partial<Pick<AssessmentQuestion, 'questionText' | 'type' | 'points' | 'explanation' | 'order'>> & {
+        payload: Partial<Pick<QuizQuestion, 'questionText' | 'type' | 'points' | 'explanation' | 'order'>> & {
           options?: Array<{
             id: string;
             optionText?: string;
@@ -418,38 +405,38 @@ export function useLectureService() {
           }>;
         }
       ) => {
-        return apiClient.patch<AssessmentQuestion>(`/lectures/assessment/questions/${questionId}`, payload);
+        return apiClient.patch<QuizQuestion>(`/lectures/quiz/questions/${questionId}`, payload);
       },
 
-      deleteAssessmentQuestion: async (questionId: string) => {
-        return apiClient.delete<{ success: boolean }>(`/lectures/assessment/questions/${questionId}`);
+      deleteQuizQuestion: async (questionId: string) => {
+        return apiClient.delete<{ success: boolean }>(`/lectures/quiz/questions/${questionId}`);
       },
 
-      publishAssessment: async (assessmentId: string) => {
-        return apiClient.patch<Assessment>(`/lectures/assessment/${assessmentId}/publish`);
+      publishQuiz: async (quizId: string) => {
+        return apiClient.patch<Quiz>(`/lectures/quiz/${quizId}/publish`);
       },
 
-      closeAssessment: async (assessmentId: string) => {
-        return apiClient.patch<Assessment>(`/lectures/assessment/${assessmentId}/close`);
+      closeQuiz: async (quizId: string) => {
+        return apiClient.patch<Quiz>(`/lectures/quiz/${quizId}/close`);
       },
 
-      archiveAssessment: async (assessmentId: string) => {
-        return apiClient.patch<Assessment>(`/lectures/assessment/${assessmentId}/archive`);
+      archiveQuiz: async (quizId: string) => {
+        return apiClient.patch<Quiz>(`/lectures/quiz/${quizId}/archive`);
       },
 
-      getAssessmentById: async (assessmentId: string) => {
-        return apiClient.get<Assessment>(`/lectures/assessment/${assessmentId}`);
+      getQuizById: async (quizId: string) => {
+        return apiClient.get<Quiz>(`/lectures/quiz/${quizId}`);
       },
 
-      getAssessmentReview: async (lectureId: string, assessmentId: string) => {
-        return apiClient.get<Assessment>(`/lectures/${lectureId}/assessment/${assessmentId}/review`);
+      getQuizReview: async (lectureId: string, quizId: string) => {
+        return apiClient.get<Quiz>(`/lectures/${lectureId}/quiz/${quizId}/review`);
       },
 
-      getAssessmentLeaderboard: async (channelId: string) => {
+      getQuizLeaderboard: async (channelId: string) => {
         return apiClient.get<ChannelLeaderboardResponse>(`/lectures/channel/${channelId}/leaderboard`);
       },
 
-      gradeAssessmentAttempt: async (
+      gradeQuizAttempt: async (
         attemptId: string,
         payload: {
           teacherAdjustment?: number;
@@ -463,11 +450,11 @@ export function useLectureService() {
           status?: 'GRADED' | 'RETURNED' | 'GRADING';
         }
       ) => {
-        return apiClient.patch<AssessmentAttempt>(`/lectures/assessment/attempts/${attemptId}/grade`, payload);
+        return apiClient.patch<QuizAttempt>(`/lectures/quiz/attempts/${attemptId}/grade`, payload);
       },
 
-      revealAssessment: async (assessmentId: string) => {
-        return apiClient.get<Assessment>(`/lectures/assessment/${assessmentId}/reveal`);
+      revealQuiz: async (quizId: string) => {
+        return apiClient.get<Quiz>(`/lectures/quiz/${quizId}/reveal`);
       },
     }),
     [apiClient]

@@ -96,6 +96,7 @@ export const useFriendRequestsEvents = () => {
     queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming"] });
     queryClient.invalidateQueries({ queryKey: ["friend-requests", "sent"] });
     queryClient.invalidateQueries({ queryKey: ["friend-requests", "incoming", "envelope"] });
+    queryClient.invalidateQueries({ queryKey: ["friends"] });
   };
 
   const upsertIncomingFromEvent = (payload: FriendRequestEventPayload) => {
