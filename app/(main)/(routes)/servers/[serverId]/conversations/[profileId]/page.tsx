@@ -35,7 +35,7 @@ const ProfileIdPage = async ({ params, searchParams }: ProfileIdPageProps) => {
   const { conversation, otherProfile } = data;
 
   return (
-    <div className="bg-white dark:bg-[#313338] flex flex-col h-full">
+    <div className="w-fullbg-white dark:bg-[#313338] flex flex-col h-full">
       <ChatHeader
         imageUrl={otherProfile.imageUrl}
         name={otherProfile.name}
