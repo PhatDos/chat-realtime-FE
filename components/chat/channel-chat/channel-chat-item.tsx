@@ -255,7 +255,7 @@ export const ChannelChatItem = React.memo(
             )}
 
             {isPDF && (
-              <div className="relative flex items-center p-3 mt-2 rounded-lg bg-gradient-to-r from-indigo-100/50 to-purple-100/50 dark:from-indigo-950/50 dark:to-purple-950/50 border border-indigo-200 dark:border-indigo-800 hover:shadow-md transition-all duration-300 hover:scale-105 group/pdf">
+              <div className="relative max-w-[190px] flex items-center p-3 mt-2 rounded-lg bg-gradient-to-r from-indigo-100/50 to-purple-100/50 dark:from-indigo-950/50 dark:to-purple-950/50 border border-indigo-200 dark:border-indigo-800 hover:shadow-md transition-all duration-300 hover:scale-105 group/pdf">
                 <FileIcon className="h-10 w-10 fill-indigo-300 stroke-indigo-500 dark:fill-indigo-700 dark:stroke-indigo-400 group-hover/pdf:scale-110 transition-transform" />
                 <a
                   href={fileUrl!}
