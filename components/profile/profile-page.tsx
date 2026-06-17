@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
 import { useQueryClient } from "@tanstack/react-query";

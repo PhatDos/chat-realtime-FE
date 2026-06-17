@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock3, Loader2, Mail, Send, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +37,6 @@ export const FriendRequestsPage = () => {
   const api = useApiClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-    const router = useRouter();
 
   const incomingQuery = useQuery<
     FriendRequestListItemDto[],
