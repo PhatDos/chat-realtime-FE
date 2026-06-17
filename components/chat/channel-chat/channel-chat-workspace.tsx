@@ -8,6 +8,7 @@ import { MemberResponse as Member } from '@/types/api/member'
 import { ChannelChatInput } from './channel-chat-input'
 import { ChannelChatMessages } from './channel-chat-messages'
 import { ChannelPolls } from './channel-polls'
+import { ChatAttachmentsPanel } from '../chat-attachments-panel'
 
 interface ChannelChatWorkspaceProps {
   channelId: string
@@ -15,7 +16,7 @@ interface ChannelChatWorkspaceProps {
   channelName: string
   member: Member
   apiUrl: string
-  activeTab?: 'messages' | 'polls'
+  activeTab?: 'messages' | 'polls' | 'media' | 'files'
 }
 
 export const ChannelChatWorkspace = ({
@@ -61,13 +62,21 @@ export const ChannelChatWorkspace = ({
     }
   }, [channelId, socket, toast])
 
-  return activeTab === 'polls' ? (
+  if (activeTab === 'polls') {
+    return (
     <ChannelPolls
       channelId={channelId}
       channelName={channelName}
       currentMemberId={member.id}
     />
-  ) : (
+    )
+  }
+
+  if (activeTab === 'media' || activeTab === 'files') {
+    return <ChatAttachmentsPanel scope='channel' id={channelId} type={activeTab} />
+  }
+
+  return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ChannelChatMessages
         member={member}

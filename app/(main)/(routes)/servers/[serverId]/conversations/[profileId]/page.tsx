@@ -1,4 +1,5 @@
 import { ChatHeader } from "@/components/chat/chat-header";
+import { ChatAttachmentsPanel } from "@/components/chat/chat-attachments-panel";
 import { DirectChatInput } from "@/components/chat/direct-chat/direct-chat-input";
 import { DirectChatMessages } from "@/components/chat/direct-chat/direct-chat-messages";
 import { MediaRoom } from "@/components/ui/media-room";
@@ -8,14 +9,23 @@ import { redirect } from "next/navigation";
 
 interface ProfileIdPageProps {
   params: Promise<{ profileId: string; serverId: string }>;
-  searchParams?: Promise<{ video?: string }>;
+  searchParams?: Promise<{ video?: string; tab?: string }>;
 }
+
+type ConversationTab = "messages" | "media" | "files";
+
+const getActiveTab = (tab?: string): ConversationTab => {
+  if (tab === "media" || tab === "files") return tab;
+
+  return "messages";
+};
 
 const ProfileIdPage = async ({ params, searchParams }: ProfileIdPageProps) => {
   const profile = await currentProfile();
   const { serverId, profileId } = await params;
   const searchParamsData = await searchParams;
   const video = searchParamsData?.video;
+  const activeTab = getActiveTab(searchParamsData?.tab);
 
   if (!profile) return redirect("/sign-in");
 
@@ -34,9 +44,16 @@ const ProfileIdPage = async ({ params, searchParams }: ProfileIdPageProps) => {
         currentProfileId={profile.id}
         serverId={serverId}
         type="conversation"
+        activeTab={activeTab}
       />
       {video ? (
         <MediaRoom chatId={conversation.id} video audio />
+      ) : activeTab === "media" || activeTab === "files" ? (
+        <ChatAttachmentsPanel
+          scope="conversation"
+          id={conversation.id}
+          type={activeTab}
+        />
       ) : (
         <>
           <DirectChatMessages

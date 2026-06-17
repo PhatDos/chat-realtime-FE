@@ -15,10 +15,18 @@ interface ChannelIdPageProps {
   }>;
 }
 
+type ChannelTab = "messages" | "polls" | "media" | "files";
+
+const getActiveTab = (tab?: string): ChannelTab => {
+  if (tab === "polls" || tab === "media" || tab === "files") return tab;
+
+  return "messages";
+};
+
 const ChannelIdPage = async ({ params, searchParams }: ChannelIdPageProps) => {
   const { serverId, channelId } = await params;
   const searchParamsData = await searchParams;
-  const activeTab = searchParamsData?.tab === 'polls' ? 'polls' : 'messages';
+  const activeTab = getActiveTab(searchParamsData?.tab);
 
   const [channelRes, accessRes] = await Promise.all([
     getChannel(serverId, channelId),

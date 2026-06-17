@@ -60,6 +60,8 @@ export interface DirectMessage {
   content: string;
   fileUrl: string | null;
   fileType: FileType | string;
+  senderId: string;
+  conversationId: string;
   deleted: boolean;
   createdAt: ApiDateTime;
   updatedAt: ApiDateTime;
