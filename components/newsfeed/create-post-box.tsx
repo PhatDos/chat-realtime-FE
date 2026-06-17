@@ -232,7 +232,7 @@ export const CreatePostBox = ({ author, onCreated }: CreatePostBoxProps) => {
               type="button"
               onClick={() => void handleSubmit()}
               disabled={isDisabled || isSubmitting}
-              className="rounded-full bg-zinc-950 px-4 text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+              className="rounded-full bg-zinc-500 px-4 text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
               {isSubmitting ? "Posting..." : "Post"}
             </Button>

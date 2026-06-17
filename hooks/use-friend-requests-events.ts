@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useCallback, useEffect } from "react";
+import { useAuth, useSession } from "@clerk/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { FRIEND_REQUESTS_EVENTS_URL, buildBearerHeaders } from "@/lib/sse-client";
+import { FRIEND_REQUESTS_EVENTS_URL, buildBearerHeaders, isJwtExpired } from "@/lib/sse-client";
 import { useApiClient } from "@/hooks/use-api-client";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentProfile } from "@/services/servers/servers-service";
@@ -65,6 +65,7 @@ export const FRIEND_EVENT_MAPPING: Record<
 
 export const useFriendRequestsEvents = () => {
   const { getToken } = useAuth();
+  const { session } = useSession();
   const api = useApiClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -75,6 +76,21 @@ export const useFriendRequestsEvents = () => {
     retry: false,
   });
   const currentProfileId = currentProfile?.id;
+
+  const getFreshSseToken = useCallback(async () => {
+    let token = await getToken({ skipCache: true });
+
+    if (isJwtExpired(token)) {
+      await session?.reload();
+      token = await getToken({ skipCache: true });
+    }
+
+    if (isJwtExpired(token, 0)) {
+      throw new Error("SSE_TOKEN_EXPIRED");
+    }
+
+    return token;
+  }, [getToken, session]);
 
   const updateIncomingEnvelopeCount = (delta: number) => {
     queryClient.setQueryData(
@@ -157,20 +173,32 @@ export const useFriendRequestsEvents = () => {
   };
 
   useEffect(() => {
-    const controller = new AbortController();
+    let isActive = true;
+    let controller: AbortController | null = null;
+    let retryTimeoutId: number | null = null;
 
     const start = async () => {
-      const token = await getToken({ skipCache: true });
       try {
+        const token = await getFreshSseToken();
+
+        if (!isActive) {
+          return;
+        }
+
+        controller = new AbortController();
+
         await fetchEventSource(FRIEND_REQUESTS_EVENTS_URL, {
           method: "GET",
           headers: buildBearerHeaders(token),
           signal: controller.signal,
           openWhenHidden: true,
           onopen: async (res) => {
-            // non-200 means server didn't accept connection
-            if (res && res.status && res.status !== 200) {
-              // allow fetchEventSource to handle retries; nothing to do here
+            if (res.status === 401) {
+              throw new Error("SSE_UNAUTHORIZED");
+            }
+
+            if (!res.ok) {
+              throw new Error(`SSE failed: ${res.status}`);
             }
           },
           onmessage: (ev) => {
@@ -353,23 +381,32 @@ export const useFriendRequestsEvents = () => {
             }
           },
           onclose: () => {
-            // noop
+            throw new Error("SSE connection closed");
           },
-          onerror: () => {
-            // let fetchEventSource handle retries
+          onerror: (err) => {
+            throw err;
           },
         });
-      } catch (e) {
-        // ignore
+      } catch (err) {
+        if (!isActive || controller?.signal.aborted) {
+          return;
+        }
+
+        console.error("Friend request SSE reconnecting after error:", err);
+        retryTimeoutId = window.setTimeout(start, 3000);
       }
     };
 
     start();
 
     return () => {
-      try {
-        controller.abort();
-      } catch {}
+      isActive = false;
+
+      if (retryTimeoutId !== null) {
+        window.clearTimeout(retryTimeoutId);
+      }
+
+      controller?.abort();
     };
-  }, [getToken, queryClient, currentProfileId, toast]);
+  }, [getFreshSseToken, queryClient, currentProfileId, toast]);
 };

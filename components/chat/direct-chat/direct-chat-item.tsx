@@ -124,6 +124,7 @@ export const DirectChatItem = ({
 
   return (
     <div
+      id={`message-${id}`}
       className={cn(
         "relative group flex items-center hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 p-3 transition-all duration-200 w-full",
         isOwner && "justify-end",

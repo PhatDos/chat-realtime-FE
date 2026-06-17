@@ -11,6 +11,7 @@ export type ServerVisibility = "PUBLIC" | "PRIVATE";
 export interface ServerResponse {
   id: string;
   name: string;
+  description: string | null;
   imageUrl: string;
   inviteCode: string;
   profileId: string;
@@ -42,6 +43,7 @@ export interface ServerSummary {
 export interface ServerDiscoverySummary {
   id: string;
   name: string;
+  description: string | null;
   imageUrl: string;
   inviteCode: string;
   visibility: ServerVisibility;

@@ -26,7 +26,7 @@ export const getServers = async (
 
 export const createServer = async (
   api: ClientApi,
-  values: { name: string; imageUrl: string; visibility?: ServerVisibility },
+  values: { name: string; imageUrl: string; description?: string; visibility?: ServerVisibility },
 ) => {
   return api.post<ServerResponse>("/servers", values);
 };
@@ -53,7 +53,7 @@ export const getTopPublicServers = async (api: ClientApi) => {
 export const updateServer = async (
   api: ClientApi,
   serverId: string,
-  values: { name: string; imageUrl: string; visibility?: ServerVisibility },
+  values: { name: string; imageUrl: string; description?: string; visibility?: ServerVisibility },
 ) => {
   return api.patch<ServerResponse>(`/servers/${serverId}`, values);
 };

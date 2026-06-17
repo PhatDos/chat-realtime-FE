@@ -1,34 +1,54 @@
-import { Hash } from 'lucide-react'
+import { FileText, Hash, ImageIcon, MessageSquareText } from 'lucide-react'
 import Link from 'next/link'
+import type { ComponentType } from 'react'
 import { MobileToggle } from '../common/mobile-toggle'
 import { ConversationMobileToggle } from '../common/conversation-mobile-toggle'
 import { ProfileHoverCard } from '../common/profile-hover-card'
 import { SocketIndicator } from '../common/socket-indicator'
 import { ChatVideoButton } from './chat-video-button'
 import { ChatNewsfeedButton } from './chat-newsfeed-button'
+import { ChatMessageSearchBar } from './chat-message-search-bar'
 import { ConversationWithProfiles } from '@/types/api/message'
+
+type ChatHeaderTab = 'messages' | 'polls' | 'media' | 'files'
 
 interface ChatHeaderProps {
   serverId?: string
   name: string
   type: 'channel' | 'conversation'
   imageUrl?: string
+  channelId?: string
+  conversationId?: string
   otherProfileId?: string
   conversations?: ConversationWithProfiles[]
   currentProfileId?: string
-  activeTab?: 'messages' | 'polls'
+  activeTab?: ChatHeaderTab
 }
 export const ChatHeader = ({
   serverId,
   name,
   type,
   imageUrl,
+  channelId,
+  conversationId,
   otherProfileId,
   conversations,
   currentProfileId,
   activeTab = 'messages'
 }: ChatHeaderProps) => {
   const isChannel = type !== 'conversation'
+  const tabs: { key: ChatHeaderTab; label: string; icon: ComponentType<{ className?: string }> }[] = isChannel
+    ? [
+        { key: 'messages', label: 'Messages', icon: MessageSquareText },
+        { key: 'polls', label: 'Polls', icon: MessageSquareText },
+        { key: 'media', label: 'Media', icon: ImageIcon },
+        { key: 'files', label: 'Files', icon: FileText },
+      ]
+    : [
+        { key: 'messages', label: 'Messages', icon: MessageSquareText },
+        { key: 'media', label: 'Media', icon: ImageIcon },
+        { key: 'files', label: 'Files', icon: FileText },
+      ]
 
   return (
     <div
@@ -57,31 +77,33 @@ export const ChatHeader = ({
         />
       )}
       <p className='font-semibold text-md text-black dark:text-white'>{name}</p>
+      <div className='mx-3 hidden min-w-[220px] flex-1 justify-center md:!flex'>
+        {isChannel && channelId ? (
+          <ChatMessageSearchBar type='channel' channelId={channelId} />
+        ) : !isChannel && conversationId ? (
+          <ChatMessageSearchBar
+            type='conversation'
+            conversationId={conversationId}
+          />
+        ) : null}
+      </div>
       <div className='ml-auto flex items-center gap-2'>
-        {isChannel && (
-          <div className='hidden md:!flex items-center rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900'>
+        <div className='hidden md:!flex items-center rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900'>
+          {tabs.map(({ key, label, icon: Icon }) => (
             <Link
-              href='?tab=messages'
-              className={`rounded-md px-3 py-1 text-xs font-medium transition ${
-                activeTab === 'messages'
+              key={key}
+              href={key === 'messages' ? '?tab=messages' : `?tab=${key}`}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                activeTab === key
                   ? 'bg-white text-indigo-600 shadow-sm dark:bg-zinc-800 dark:text-indigo-300'
                   : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
-              Messages
+              <Icon className='h-3.5 w-3.5' />
+              {label}
             </Link>
-            <Link
-              href='?tab=polls'
-              className={`rounded-md px-3 py-1 text-xs font-medium transition ${
-                activeTab === 'polls'
-                  ? 'bg-white text-indigo-600 shadow-sm dark:bg-zinc-800 dark:text-indigo-300'
-                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
-            >
-              Polls
-            </Link>
-          </div>
-        )}
+          ))}
+        </div>
         <ChatNewsfeedButton />
         {type === 'conversation' && <ChatVideoButton />}
         <SocketIndicator />
