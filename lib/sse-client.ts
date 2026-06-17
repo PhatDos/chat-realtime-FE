@@ -12,6 +12,31 @@ export const buildBearerHeaders = (token: string | null | undefined) => {
   return headers;
 };
 
+export const getJwtExpirationMs = (token: string | null | undefined) => {
+  if (!token) return null;
+
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const parsed = JSON.parse(atob(normalizedPayload));
+
+    return typeof parsed.exp === "number" ? parsed.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+};
+
+export const isJwtExpired = (
+  token: string | null | undefined,
+  leewayMs = 30_000
+) => {
+  const expiresAt = getJwtExpirationMs(token);
+
+  return expiresAt !== null && expiresAt <= Date.now() + leewayMs;
+};
+
 export type PostCreatedPayload = {
   type: "POST_CREATED";
   actionUserId?: string;

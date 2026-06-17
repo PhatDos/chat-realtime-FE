@@ -41,6 +41,7 @@ import { Globe, Lock } from 'lucide-react'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Server name is required'),
+  description: z.string().max(160, 'Description must be 160 characters or less').optional(),
   imageUrl: z.string().min(1, 'Server image is required'),
   visibility: z.enum(['PUBLIC', 'PRIVATE']),
 })
@@ -58,6 +59,7 @@ export const EditServerModal = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      description: '',
       imageUrl: '',
       visibility: 'PRIVATE' as const,
     },
@@ -67,6 +69,7 @@ export const EditServerModal = () => {
     if (!server) return
 
     form.setValue('name', server.name)
+    form.setValue('description', server.description ?? '')
     form.setValue('imageUrl', server.imageUrl)
     form.setValue('visibility', server.visibility)
   }, [server, form])
@@ -141,7 +144,7 @@ export const EditServerModal = () => {
                       <FormControl>
                         <Input
                           disabled={isLoading}
-                          className='bg-zinc-300/50 border-2 focus-visible:ring-0 text-black focus-visible:ring-offset-0 placeholder:italic placeholder:text-sm placeholder:text-zinc-500'
+                          className='bg-zinc-100/50 border-2 focus-visible:ring-0 text-black focus-visible:ring-offset-0 placeholder:italic placeholder:text-sm placeholder:text-zinc-500'
                           placeholder='Enter server name'
                           {...field}
                         />
@@ -165,7 +168,7 @@ export const EditServerModal = () => {
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger className='w-full bg-zinc-300/50 border-2 focus-visible:ring-0 text-black focus-visible:ring-offset-0'>
+                          <SelectTrigger className='w-full bg-zinc-100/50 border-2 focus-visible:ring-0 text-black focus-visible:ring-offset-0'>
                             <SelectValue placeholder='Select visibility' />
                           </SelectTrigger>
                         </FormControl>
@@ -189,6 +192,26 @@ export const EditServerModal = () => {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name='description'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='uppercase pt-3 text-xs font-bold text-zinc-500 dark:text-secondary-500'>
+                      Description
+                    </FormLabel>
+                    <FormControl>
+                      <textarea
+                        disabled={isLoading}
+                        className='min-h-20 w-full resize-none rounded-md bg-zinc-100/50 border-2 px-3 py-2 text-sm text-black placeholder:italic placeholder:text-sm placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0'
+                        placeholder='Describe this server'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className='text-xs italic text-red-500' />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <DialogFooter className='bg-gray-300 px-6 py-2 flex justify-center'>

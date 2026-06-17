@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useApiClient } from "@/hooks/use-api-client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useSession } from "@clerk/nextjs";
 
 import { deletePost, getUserPosts, likePost, unlikePost } from "@/services/posts-client-service";
-import { buildBearerHeaders, POSTS_EVENTS_URL, type PostsEventPayload } from "@/lib/sse-client";
+import { buildBearerHeaders, isJwtExpired, POSTS_EVENTS_URL, type PostsEventPayload } from "@/lib/sse-client";
 import { PostCard, PostCardSkeleton } from "./post-card";
 import { FeedPost, FeedComment } from "./types";
 
@@ -40,6 +40,7 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
   const api = useApiClient();
   const { toast } = useToast();
   const { getToken } = useAuth(); // Moved getToken to component level
+  const { session } = useSession();
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -53,6 +54,21 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
   const handledCommentIdsRef = useRef<Set<string>>(new Set());
 
   const hasMore = useMemo(() => cursor !== null, [cursor]);
+
+  const getFreshSseToken = useCallback(async () => {
+    let token = await getToken({ skipCache: true });
+
+    if (isJwtExpired(token)) {
+      await session?.reload();
+      token = await getToken({ skipCache: true });
+    }
+
+    if (isJwtExpired(token, 0)) {
+      throw new Error("SSE_TOKEN_EXPIRED");
+    }
+
+    return token;
+  }, [getToken, session]);
 
   const prependPost = useCallback((post: FeedPost) => {
     setPosts((prev) => [post, ...prev.filter((item) => item.id !== post.id)]);
@@ -195,12 +211,17 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
 
   // SSE
   useEffect(() => {
+    let isActive = true;
     let controller: AbortController | null = null;
+    let retryTimeoutId: number | null = null;
 
     const setupSSE = async () => {
       try {
-        // Get token from localStorage or your auth method
-        const token = await getToken();
+        const token = await getFreshSseToken();
+
+        if (!isActive) {
+          return;
+        }
 
         controller = new AbortController();
 
@@ -302,6 +323,15 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
           signal: controller.signal,
           // Keep the SSE connection open even when the document becomes hidden
           openWhenHidden: true,
+          onopen: async (response) => {
+            if (response.status === 401) {
+              throw new Error("SSE_UNAUTHORIZED");
+            }
+
+            if (!response.ok) {
+              throw new Error(`SSE failed: ${response.status}`);
+            }
+          },
           onmessage: (e) => {
             try {
               const raw = typeof e.data === "string" ? e.data.trim() : "";
@@ -327,22 +357,32 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
           },
           onerror: (err) => {
             console.error("SSE error:", err);
+            throw err;
           },
         });
       } catch (error) {
+        if (!isActive || controller?.signal.aborted) {
+          return;
+        }
+
         // SSE connection failed or was aborted
-        console.error("SSE setup error:", error);
+        console.error("SSE reconnecting after error:", error);
+        retryTimeoutId = window.setTimeout(setupSSE, 3000);
       }
     };
 
     setupSSE();
 
     return () => {
-      if (controller) {
-        controller.abort();
+      isActive = false;
+
+      if (retryTimeoutId !== null) {
+        window.clearTimeout(retryTimeoutId);
       }
+
+      controller?.abort();
     };
-  }, [getToken, profileId, prependPost]);
+  }, [getFreshSseToken, profileId, prependPost]);
 
   useEffect(() => {
     const target = sentinelRef.current;

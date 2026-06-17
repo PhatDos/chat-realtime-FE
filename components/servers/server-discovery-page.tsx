@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Globe, Search, Sparkles, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { useApiClient } from "@/hooks/use-api-client";
@@ -42,6 +43,7 @@ export const ServerDiscoveryPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ServerDiscoverySummary[]>([]);
+  const [brokenImageIds, setBrokenImageIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -216,8 +218,24 @@ export const ServerDiscoveryPage = () => {
                       onClick={() => handleOpenServer(server.inviteCode)}
                       className="flex w-full items-center gap-4 rounded-2xl border border-zinc-200/70 bg-zinc-50/80 px-3 py-3 text-left transition hover:border-sky-200 hover:bg-sky-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/15 dark:hover:bg-white/8"
                     >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-400 text-white shadow-lg shadow-sky-500/20">
+                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-400 text-white shadow-lg shadow-sky-500/20">
                         <Globe className="h-5 w-5" />
+                        {server.imageUrl && !brokenImageIds.has(server.id) ? (
+                          <Image
+                            fill
+                            src={server.imageUrl}
+                            alt={server.name}
+                            sizes="48px"
+                            className="object-cover"
+                            onError={() =>
+                              setBrokenImageIds((current) => {
+                                const next = new Set(current);
+                                next.add(server.id);
+                                return next;
+                              })
+                            }
+                          />
+                        ) : null}
                       </div>
 
                       <div className="min-w-0 flex-1 space-y-1">
@@ -230,9 +248,14 @@ export const ServerDiscoveryPage = () => {
                           </span>
                         </div>
 
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {server.memberCount.toLocaleString()} members
+                        <p className="line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          {server.description?.trim() || `${server.memberCount.toLocaleString()} members`}
                         </p>
+                        {server.description?.trim() ? (
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                            {server.memberCount.toLocaleString()} members
+                          </p>
+                        ) : null}
                       </div>
 
                       <div className="flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1 text-xs font-medium text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
