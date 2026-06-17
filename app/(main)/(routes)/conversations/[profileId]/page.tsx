@@ -36,6 +36,7 @@ const ProfileIdPage = async ({ params, searchParams }: ProfileIdPageProps) => {
         imageUrl={otherProfile.imageUrl}
         name={otherProfile.name}
         otherProfileId={otherProfile.id}
+        conversationId={conversation.id}
         type='conversation'
         conversations={conversations}
         currentProfileId={profile.id}

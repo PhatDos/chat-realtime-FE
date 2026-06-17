@@ -37,6 +37,7 @@ const ChannelIdPage = async ({ params, searchParams }: ChannelIdPageProps) => {
       <ChatHeader
         name={channel.name}
         serverId={channel.serverId}
+        channelId={channel.id}
         type="channel"
         activeTab={activeTab}
       />

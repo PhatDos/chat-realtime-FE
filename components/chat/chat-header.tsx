@@ -6,6 +6,7 @@ import { ProfileHoverCard } from '../common/profile-hover-card'
 import { SocketIndicator } from '../common/socket-indicator'
 import { ChatVideoButton } from './chat-video-button'
 import { ChatNewsfeedButton } from './chat-newsfeed-button'
+import { ChatMessageSearchBar } from './chat-message-search-bar'
 import { ConversationWithProfiles } from '@/types/api/message'
 
 interface ChatHeaderProps {
@@ -13,6 +14,8 @@ interface ChatHeaderProps {
   name: string
   type: 'channel' | 'conversation'
   imageUrl?: string
+  channelId?: string
+  conversationId?: string
   otherProfileId?: string
   conversations?: ConversationWithProfiles[]
   currentProfileId?: string
@@ -23,6 +26,8 @@ export const ChatHeader = ({
   name,
   type,
   imageUrl,
+  channelId,
+  conversationId,
   otherProfileId,
   conversations,
   currentProfileId,
@@ -57,6 +62,16 @@ export const ChatHeader = ({
         />
       )}
       <p className='font-semibold text-md text-black dark:text-white'>{name}</p>
+      <div className='mx-3 hidden min-w-[220px] flex-1 justify-center md:!flex'>
+        {isChannel && channelId ? (
+          <ChatMessageSearchBar type='channel' channelId={channelId} />
+        ) : !isChannel && conversationId ? (
+          <ChatMessageSearchBar
+            type='conversation'
+            conversationId={conversationId}
+          />
+        ) : null}
+      </div>
       <div className='ml-auto flex items-center gap-2'>
         {isChannel && (
           <div className='hidden md:!flex items-center rounded-lg bg-zinc-100 p-1 dark:bg-zinc-900'>
