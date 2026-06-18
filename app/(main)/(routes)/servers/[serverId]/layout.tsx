@@ -25,7 +25,7 @@ const ServerIdLayout = async ({ children, params }: ServerIdLayoutProps) => {
 
   return (
     <div className="flex h-full">
-      <div className="hidden xl:!flex xl:!flex-1 overflow-y-auto">
+      <div className="hidden lg:!flex lg:!flex-1 overflow-y-auto">
         <ServerSidebar serverId={serverId} />
       </div>
       <div className="flex-[2]">{children}</div>
