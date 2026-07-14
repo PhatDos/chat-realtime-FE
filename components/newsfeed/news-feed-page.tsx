@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageSquare, MoreHorizontal } from "lucide-react";
 
@@ -17,7 +17,12 @@ interface NewsFeedPageProps {
 }
 
 export const NewsFeedPage = ({ currentUser }: NewsFeedPageProps) => {
+  const [mounted, setMounted] = useState(false);
   const [latestCreatedPost, setLatestCreatedPost] = useState<FeedPost | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(236,72,153,0.10),_transparent_22%),linear-gradient(180deg,_#fafafa_0%,_#f4f4f5_46%,_#e4e4e7_100%)] text-zinc-900 dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(168,85,247,0.16),_transparent_24%),linear-gradient(180deg,_#0a0a0b_0%,_#111113_45%,_#18181b_100%)] dark:text-zinc-50">
@@ -37,14 +42,18 @@ export const NewsFeedPage = ({ currentUser }: NewsFeedPageProps) => {
 
           <nav className="ml-auto flex items-center gap-3">
             <NotificationBell />
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "h-[38px] w-[38px]",
-                  userButtonPopoverCard: { pointerEvents: "initial" },
-                },
-              }}
-            />
+            {mounted ? (
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-[38px] w-[38px]",
+                    userButtonPopoverCard: { pointerEvents: "initial" },
+                  },
+                }}
+              />
+            ) : (
+              <div className="h-[38px] w-[38px] rounded-full bg-zinc-200 dark:bg-zinc-800" />
+            )}
           </nav>
         </div>
       </header>

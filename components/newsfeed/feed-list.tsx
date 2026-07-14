@@ -14,6 +14,7 @@ import { PostCard, PostCardSkeleton } from "./post-card";
 import { FeedPost, FeedComment } from "./types";
 
 const FEED_PAGE_SIZE = 5;
+const SSE_RETRY_DELAY_MS = 10_000;
 
 interface FeedListProps {
   profileId: string;
@@ -56,9 +57,9 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
   const hasMore = useMemo(() => cursor !== null, [cursor]);
 
   const getFreshSseToken = useCallback(async () => {
-    let token = await getToken({ skipCache: true });
+    let token = await getToken();
 
-    if (isJwtExpired(token)) {
+    if (!token || isJwtExpired(token)) {
       await session?.reload();
       token = await getToken({ skipCache: true });
     }
@@ -367,7 +368,7 @@ export const FeedList = ({ profileId, newPost }: FeedListProps) => {
 
         // SSE connection failed or was aborted
         console.error("SSE reconnecting after error:", error);
-        retryTimeoutId = window.setTimeout(setupSSE, 3000);
+        retryTimeoutId = window.setTimeout(setupSSE, SSE_RETRY_DELAY_MS);
       }
     };
 

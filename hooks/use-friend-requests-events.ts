@@ -37,6 +37,8 @@ type FriendRequestEventPayload = {
   friendId?: string;
 };
 
+const SSE_RETRY_DELAY_MS = 10_000;
+
 export const FRIEND_EVENT_MAPPING: Record<
   FriendRequestEventType,
   { title: string; getMessage: (payload: FriendRequestEventPayload) => string }
@@ -78,9 +80,9 @@ export const useFriendRequestsEvents = () => {
   const currentProfileId = currentProfile?.id;
 
   const getFreshSseToken = useCallback(async () => {
-    let token = await getToken({ skipCache: true });
+    let token = await getToken();
 
-    if (isJwtExpired(token)) {
+    if (!token || isJwtExpired(token)) {
       await session?.reload();
       token = await getToken({ skipCache: true });
     }
@@ -393,7 +395,7 @@ export const useFriendRequestsEvents = () => {
         }
 
         console.error("Friend request SSE reconnecting after error:", err);
-        retryTimeoutId = window.setTimeout(start, 3000);
+        retryTimeoutId = window.setTimeout(start, SSE_RETRY_DELAY_MS);
       }
     };
 
